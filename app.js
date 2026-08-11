@@ -61,7 +61,10 @@ document.querySelector('#formulaire-dossier').addEventListener('submit', async (
   bouton.disabled = true; bouton.textContent = 'Analyse en cours...';
   try {
     const reponse = await fetch('/api/demandes-credit/analyser/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(donneesApi()) });
-    const contenu = await reponse.json();
+    const texteReponse = await reponse.text();
+    let contenu;
+    try { contenu = JSON.parse(texteReponse); }
+    catch { throw new Error(`Le serveur a renvoyé une erreur (${reponse.status}). Recharge la page puis relance le serveur et les migrations.`); }
     if (!reponse.ok) throw new Error(contenu.erreur || 'Analyse impossible');
     afficherResultat(contenu);
   } catch (erreur) { alert(`Impossible d'analyser le dossier : ${erreur.message}`); }
