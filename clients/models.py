@@ -6,6 +6,7 @@ class Client(models.Model):
     secteur_activite = models.CharField(max_length=80)
     revenu_mensuel = models.PositiveIntegerField()
     charges_mensuelles = models.PositiveIntegerField()
+    mensualite_dette_existante = models.PositiveIntegerField(default=0)
     anciennete_activite_mois = models.PositiveIntegerField()
     nombre_retards = models.PositiveSmallIntegerField(default=0)
     regularite_tontine = models.CharField(max_length=20, default="inconnue")

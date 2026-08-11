@@ -1,6 +1,6 @@
 def construire_caracteristiques(client, demande_credit):
     echeance = demande_credit.echeance_estimee
-    capacite_remboursement = client.revenu_mensuel - client.charges_mensuelles
+    capacite_remboursement = client.revenu_mensuel - client.charges_mensuelles - client.mensualite_dette_existante
     return {
         "capacite_remboursement": capacite_remboursement,
         "echeance": echeance,

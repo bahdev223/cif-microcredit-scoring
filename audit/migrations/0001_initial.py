@@ -14,13 +14,13 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='JournalAudit',
+            name='AuditLog',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type_evenement', models.CharField(max_length=60)),
-                ('contenu', models.JSONField()),
-                ('cree_le', models.DateTimeField(auto_now_add=True)),
-                ('demande_credit', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='journaux_audit', to='credits.demandecredit')),
+                ('event_type', models.CharField(max_length=60)),
+                ('payload', models.JSONField()),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('application', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='audit_logs', to='credits.demandecredit')),
             ],
         ),
     ]

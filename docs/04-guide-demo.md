@@ -2,12 +2,13 @@
 
 ## Scenario (2 minutes)
 
-1. Presenter Fatou, commercante avec 36 mois d'activite.
-2. Montrer ses revenus, charges, l'absence de retard et sa tontine reguliere.
-3. Cliquer sur **Analyser le dossier**.
-4. Lire le score, les facteurs favorables et la qualite des donnees.
-5. Modifier le montant ou declarer des retards ; relancer l'analyse pour montrer que l'outil explique ce qui change.
-6. Conclure : l'outil structure et accelere l'analyse, mais l'agent conserve la decision.
+1. Ouvrir `http://127.0.0.1:8000/`.
+2. Montrer les quatre zones de saisie : demande, activité, ménage et historique.
+3. Le cas Fatou est prérempli selon le support pédagogique : 700 000 FCFA de chiffre d'affaires, 180 000 FCFA de résultat d'activité, 120 000 FCFA de dépenses de ménage et 20 000 FCFA de dette existante.
+4. Cliquer sur **Analyser le dossier de Fatou**.
+5. Lire la capacité de remboursement (40 000 FCFA), l'échéance estimée, le niveau de risque, les facteurs et les règles métier.
+6. Cliquer sur **Simuler -20 % du montant** pour comparer immédiatement un autre scénario.
+7. Conclure : l'outil structure et accélère l'analyse, mais l'agent conserve la décision.
 
 ## Message a ne pas oublier
 

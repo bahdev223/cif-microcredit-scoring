@@ -4,60 +4,91 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CIF | Analyse microcredit</title>
+    <title>CIF - Simulation du dossier Fatou</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}" />
   </head>
   <body>
     <header>
-      <p class="surtitre">CIF DigiCoop-WA+ · V0</p>
-      <h1>Analyse microcredit</h1>
-      <p>Une aide simple et explicable pour l'agent de credit.</p>
+      <p class="surtitre">CIF DigiCoop-WA+ · Démonstration</p>
+      <h1>Tester le dossier de Fatou</h1>
+      <p>Une fiche de saisie complète, puis une analyse explicable. Le résultat reste une aide à la décision.</p>
     </header>
 
     <main>
-      <section class="carte" aria-labelledby="titre-dossier">
-        <div class="titre-section">
-          <div>
-            <p class="surtitre">Etape 1</p>
-            <h2 id="titre-dossier">Dossier client</h2>
-          </div>
-          <span class="pastille">Decision humaine</span>
-        </div>
-
-        <form id="formulaire-credit">
-          <div class="grille-formulaire">
-            <label>Nom complet<input id="nom" required value="Fatou Traore" /></label>
-            <label>Secteur d'activite<select id="secteur"><option>Commerce</option><option>Agriculture</option><option>Artisanat</option><option>Services</option></select></label>
-            <label>Montant demande (FCFA)<input id="montant" type="number" min="10000" step="5000" required value="300000" /></label>
-            <label>Revenu mensuel estime (FCFA)<input id="revenu" type="number" min="0" required value="180000" /></label>
-            <label>Charges mensuelles (FCFA)<input id="charges" type="number" min="0" required value="65000" /></label>
-            <label>Anciennete de l'activite (mois)<input id="anciennete-activite" type="number" min="0" required value="36" /></label>
-            <label>Retards precedents<select id="nombre-retards"><option value="0">Aucun</option><option value="1">1 a 2 retards</option><option value="3">3 retards ou plus</option></select></label>
-            <label>Regularite tontine<select id="regularite-tontine"><option value="reguliere">Reguliere</option><option value="partielle">Partielle</option><option value="inconnue">Aucune information</option></select></label>
-          </div>
-          <button type="submit">Analyser le dossier</button>
-        </form>
+      <section class="carte bandeau-cas">
+        <strong>Cas pédagogique prérempli</strong>
+        <span>Fatou, commerce alimentaire · demande de 500 000 FCFA pour augmenter son stock.</span>
+        <button id="recharger-cas" class="bouton-lien" type="button">Recharger le cas Fatou</button>
       </section>
+
+      <form id="formulaire-dossier">
+        <section class="carte">
+          <p class="surtitre">1. Identité et demande</p>
+          <div class="grille-formulaire">
+            <label>Nom complet<input id="nom_complet" required /></label>
+            <label>Secteur d'activité<input id="secteur_activite" required /></label>
+            <label>Objet du crédit<input id="objet_credit" required /></label>
+            <label>Montant demandé (FCFA)<input id="montant_demande" type="number" min="10000" step="5000" required /></label>
+            <label>Durée souhaitée (mois)<input id="duree_mois" type="number" min="1" max="60" required /></label>
+          </div>
+        </section>
+
+        <section class="carte">
+          <p class="surtitre">2. Activité économique mensuelle</p>
+          <p class="aide">Le système calcule le résultat de l'activité : chiffre d'affaires moins charges d'activité.</p>
+          <div class="grille-formulaire">
+            <label>Chiffre d'affaires<input id="chiffre_affaires" type="number" min="0" required /></label>
+            <label>Achats de marchandises<input id="achats_marchandises" type="number" min="0" required /></label>
+            <label>Loyer de l'activité<input id="loyer_activite" type="number" min="0" required /></label>
+            <label>Transport de l'activité<input id="transport_activite" type="number" min="0" required /></label>
+            <label>Autres charges d'activité<input id="autres_charges_activite" type="number" min="0" required /></label>
+          </div>
+          <p class="calcul">Résultat estimé de l'activité : <strong id="resultat-activite">0 FCFA</strong></p>
+        </section>
+
+        <section class="carte">
+          <p class="surtitre">3. Ménage et engagements</p>
+          <p class="aide">La capacité de remboursement est calculée après les dépenses du ménage et la dette existante.</p>
+          <div class="grille-formulaire">
+            <label>Alimentation<input id="alimentation" type="number" min="0" required /></label>
+            <label>Logement<input id="logement" type="number" min="0" required /></label>
+            <label>Transport personnel<input id="transport_personnel" type="number" min="0" required /></label>
+            <label>Autres dépenses du ménage<input id="autres_depenses_menage" type="number" min="0" required /></label>
+            <label>Mensualité de dette existante<input id="mensualite_dette_existante" type="number" min="0" required /></label>
+          </div>
+          <p class="calcul">Capacité de remboursement estimée : <strong id="capacite-remboursement">0 FCFA</strong></p>
+        </section>
+
+        <section class="carte">
+          <p class="surtitre">4. Historique et qualité du dossier</p>
+          <div class="grille-formulaire">
+            <label>Ancienneté de l'activité (mois)<input id="anciennete_activite_mois" type="number" min="0" required /></label>
+            <label>Nombre de retards précédents<input id="nombre_retards" type="number" min="0" required /></label>
+            <label>Régularité de la tontine<select id="regularite_tontine"><option value="reguliere">Régulière</option><option value="partielle">Partielle</option><option value="inconnue">Information indisponible</option></select></label>
+            <label>Crédits précédents terminés<input id="credits_termines" type="number" min="0" required /></label>
+          </div>
+        </section>
+
+        <button class="bouton-principal" type="submit">Analyser le dossier de Fatou</button>
+      </form>
 
       <section id="resultat" class="resultats masque" aria-live="polite">
         <div class="carte-risque">
-          <p class="surtitre">Etape 2 · Resultat indicatif</p>
-          <h2 id="libelle-risque">Risque modere</h2>
+          <p class="surtitre">Résultat indicatif</p>
+          <h2 id="niveau-risque">Analyse en attente</h2>
           <p class="score"><span id="score-risque">--</span><small>/100</small></p>
           <p id="recommandation-agent"></p>
-          <button id="simuler" class="secondaire" type="button">Simuler -20 % du montant</button>
+          <button id="simuler-montant" class="secondaire" type="button">Simuler -20 % du montant</button>
         </div>
         <div class="details-analyse">
+          <article class="carte"><h3>Indicateurs calculés</h3><ul id="indicateurs"></ul></article>
           <article class="carte"><h3>Facteurs favorables</h3><ul id="facteurs-favorables"></ul></article>
           <article class="carte"><h3>Points de vigilance</h3><ul id="points-vigilance"></ul></article>
-          <article class="carte"><h3>Qualite des donnees</h3><p id="qualite-donnees"></p></article>
-          <article class="carte"><h3>Regles declenchees</h3><ul id="regles-declenchees"></ul></article>
+          <article class="carte"><h3>Règles déclenchées</h3><ul id="regles-declenchees"></ul></article>
         </div>
       </section>
-
-      <section class="carte historique"><div class="titre-section"><h2>Journal local</h2><button id="effacer-journal" class="bouton-lien" type="button">Effacer</button></div><ul id="liste-journal"><li>Aucune analyse dans cette session.</li></ul></section>
     </main>
-    <footer>Prototype de demonstration - donnees fictives - ne remplace pas l'analyse de l'agent.</footer>
+    <footer>Cas fictif destiné à une démonstration. La décision finale appartient à l’agent de crédit.</footer>
     <script src="{% static 'app.js' %}"></script>
   </body>
 </html>
