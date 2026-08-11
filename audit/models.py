@@ -1,9 +1,9 @@
 from django.db import models
-from credits.models import CreditApplication
+from credits.models import DemandeCredit
 
 
-class AuditLog(models.Model):
-    application = models.ForeignKey(CreditApplication, on_delete=models.CASCADE, related_name="audit_logs")
-    event_type = models.CharField(max_length=60)
-    payload = models.JSONField()
-    created_at = models.DateTimeField(auto_now_add=True)
+class JournalAudit(models.Model):
+    demande_credit = models.ForeignKey(DemandeCredit, on_delete=models.CASCADE, related_name="journaux_audit")
+    type_evenement = models.CharField(max_length=60)
+    contenu = models.JSONField()
+    cree_le = models.DateTimeField(auto_now_add=True)

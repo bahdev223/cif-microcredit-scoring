@@ -3,39 +3,39 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_POST
 
-from audit.models import AuditLog
+from audit.models import JournalAudit
 from clients.models import Client
-from credits.models import CreditApplication
-from scoring.explainability import explain
-from scoring.predictor import predict
+from credits.models import DemandeCredit
+from evaluation_risque.explicabilite import expliquer_prediction
+from evaluation_risque.predicteur import predire_risque
 
 
 @require_GET
-def health(request):
-    return JsonResponse({"status": "ok", "service": "cif-microcredit-scoring"})
+def etat_service(requete):
+    return JsonResponse({"etat": "operationnel", "service": "evaluation-microcredit-cif"})
 
 
 @require_POST
-def analyze_credit(request):
+def analyser_demande_credit(requete):
     try:
-        data = json.loads(request.body)
+        donnees = json.loads(requete.body)
         client = Client.objects.create(
-            full_name=data["full_name"],
-            sector=data["sector"],
-            monthly_income=int(data["monthly_income"]),
-            monthly_expenses=int(data["monthly_expenses"]),
-            business_age_months=int(data["business_age_months"]),
-            late_payments=int(data.get("late_payments", 0)),
-            tontine_regularity=data.get("tontine_regularity", "unknown"),
+            nom_complet=donnees["nom_complet"],
+            secteur_activite=donnees["secteur_activite"],
+            revenu_mensuel=int(donnees["revenu_mensuel"]),
+            charges_mensuelles=int(donnees["charges_mensuelles"]),
+            anciennete_activite_mois=int(donnees["anciennete_activite_mois"]),
+            nombre_retards=int(donnees.get("nombre_retards", 0)),
+            regularite_tontine=donnees.get("regularite_tontine", "inconnue"),
         )
-        application = CreditApplication.objects.create(client=client, amount=int(data["amount"]), term_months=int(data.get("term_months", 12)))
-    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-        return JsonResponse({"error": f"Donnees invalides : {error}"}, status=400)
+        demande_credit = DemandeCredit.objects.create(client=client, montant_demande=int(donnees["montant_demande"]), duree_mois=int(donnees.get("duree_mois", 12)))
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as erreur:
+        return JsonResponse({"erreur": f"Donnees invalides : {erreur}"}, status=400)
 
-    prediction = predict(client, application)
-    application.risk_score = prediction["score"]
-    application.risk_level = prediction["risk_level"]
-    application.save(update_fields=["risk_score", "risk_level"])
-    explanation = explain(prediction)
-    AuditLog.objects.create(application=application, event_type="SCORING_ANALYZED", payload={"prediction": prediction, "explanation": explanation})
-    return JsonResponse({"application_id": application.id, "client_id": client.id, "score": prediction["score"], "risk_level": prediction["risk_level"], "recommendation": prediction["recommendation"], "explanation": explanation}, status=201)
+    prediction = predire_risque(client, demande_credit)
+    demande_credit.score_risque = prediction["score_risque"]
+    demande_credit.niveau_risque = prediction["niveau_risque"]
+    demande_credit.save(update_fields=["score_risque", "niveau_risque"])
+    explication = expliquer_prediction(prediction)
+    JournalAudit.objects.create(demande_credit=demande_credit, type_evenement="ANALYSE_RISQUE_EFFECTUEE", contenu={"prediction": prediction, "explication": explication})
+    return JsonResponse({"identifiant_demande": demande_credit.id, "identifiant_client": client.id, "score_risque": prediction["score_risque"], "niveau_risque": prediction["niveau_risque"], "recommandation": prediction["recommandation"], "explication": explication}, status=201)

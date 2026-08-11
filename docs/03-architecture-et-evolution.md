@@ -3,15 +3,15 @@
 ## V0 Django
 
 ```text
-clients/     # profil economique du client
-credits/     # demande de credit et son resultat
-scoring/     # features, regles, predictor et explication
-audit/       # trace de chaque analyse
-api/         # endpoints REST
-config/      # configuration Django
+clients/             # profil economique du client
+credits/             # demande de credit et son resultat
+evaluation_risque/   # caracteristiques, regles, predicteur et explication
+audit/               # trace de chaque analyse
+api/                 # points d'acces REST
+config/              # configuration Django
 ```
 
-L'endpoint `POST /api/credit-applications/analyze/` persiste un client et une demande, calcule le score et enregistre l'analyse dans l'audit.
+Le point d'acces `POST /api/demandes-credit/analyser/` persiste un client et une demande, calcule le score et enregistre l'analyse dans l'audit.
 
 ## Evolution cible, seulement apres validation
 

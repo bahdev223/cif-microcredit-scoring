@@ -1,4 +1,4 @@
-# CIF Microcredit Scoring
+# CIF - Evaluation du risque de microcredit
 
 Prototype V0 Django d'aide a la decision pour un agent de microfinance. Il analyse un dossier client, estime un niveau de risque et explique clairement les facteurs pris en compte. La decision de credit reste toujours humaine.
 
@@ -14,7 +14,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Verifier ensuite `GET /api/health/` ou appeler `POST /api/credit-applications/analyze/`.
+Verifier ensuite `GET /api/etat/` ou appeler `POST /api/demandes-credit/analyser/`.
 
 ## Contenu de cette V0
 

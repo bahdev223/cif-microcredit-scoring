@@ -1,59 +1,56 @@
-const form = document.querySelector('#credit-form');
-const result = document.querySelector('#result');
-const historyList = document.querySelector('#history-list');
-let latest = null;
+const formulaire = document.querySelector('#formulaire-credit');
+const resultat = document.querySelector('#resultat');
+const listeJournal = document.querySelector('#liste-journal');
+let dernierDossier = null;
 
-const format = (value) => new Intl.NumberFormat('fr-FR').format(value) + ' FCFA';
-const renderList = (selector, values) => {
-  document.querySelector(selector).innerHTML = values.length
-    ? values.map((item) => `<li>${item}</li>`).join('')
+const formaterMontant = (valeur) => new Intl.NumberFormat('fr-FR').format(valeur) + ' FCFA';
+const afficherListe = (selecteur, valeurs) => {
+  document.querySelector(selecteur).innerHTML = valeurs.length
+    ? valeurs.map((valeur) => `<li>${valeur}</li>`).join('')
     : '<li>Aucun element particulier.</li>';
 };
 
-function analyse(values) {
-  const capacity = values.income - values.expenses;
-  const installment = values.amount / 12;
-  let risk = 45;
-  const positives = [];
-  const negatives = [];
-  const rules = [];
+function analyser(dossier) {
+  const capacite = dossier.revenu - dossier.charges;
+  const echeance = dossier.montant / 12;
+  let risque = 45;
+  const favorables = [], vigilances = [], regles = [];
 
-  if (capacity >= installment * 2) { risk -= 18; positives.push("Capacite mensuelle confortable par rapport a l'echeance estimee."); }
-  else if (capacity >= installment) { risk -= 5; positives.push('Capacite mensuelle suffisante mais a surveiller.'); }
-  else { risk += 25; negatives.push("Capacite mensuelle inferieure a l'echeance estimee."); rules.push('R01 - capacite de remboursement insuffisante'); }
-  if (values.businessAge >= 24) { risk -= 10; positives.push('Activite exercee depuis au moins 24 mois.'); }
-  else if (values.businessAge < 12) { risk += 12; negatives.push('Activite recente : recul limite sur les revenus.'); rules.push('R02 - anciennete faible'); }
-  if (values.latePayments === 0) { risk -= 8; positives.push('Aucun retard de paiement renseigne.'); }
-  else { risk += values.latePayments === 1 ? 12 : 25; negatives.push('Retards precedents declares.'); rules.push('R03 - historique de retard'); }
-  if (values.tontine === 'good') { risk -= 7; positives.push('Cotisations tontine regulieres.'); }
-  else if (values.tontine === 'none') { risk += 4; negatives.push('Information tontine indisponible.'); }
+  if (capacite >= echeance * 2) { risque -= 18; favorables.push("Capacite mensuelle confortable par rapport a l'echeance estimee."); }
+  else if (capacite >= echeance) { risque -= 5; favorables.push('Capacite mensuelle suffisante mais a surveiller.'); }
+  else { risque += 25; vigilances.push("Capacite mensuelle inferieure a l'echeance estimee."); regles.push('R01 - capacite de remboursement insuffisante'); }
+  if (dossier.ancienneteActivite >= 24) { risque -= 10; favorables.push('Activite exercee depuis au moins 24 mois.'); }
+  else if (dossier.ancienneteActivite < 12) { risque += 12; vigilances.push('Activite recente : recul limite sur les revenus.'); regles.push('R02 - anciennete faible'); }
+  if (dossier.nombreRetards === 0) { risque -= 8; favorables.push('Aucun retard de paiement renseigne.'); }
+  else { risque += dossier.nombreRetards <= 2 ? 12 : 25; vigilances.push('Retards precedents declares.'); regles.push('R03 - historique de retard'); }
+  if (dossier.regulariteTontine === 'reguliere') { risque -= 7; favorables.push('Cotisations tontine regulieres.'); }
+  else if (dossier.regulariteTontine === 'inconnue') { risque += 4; vigilances.push('Information tontine indisponible.'); }
 
-  risk = Math.max(5, Math.min(95, Math.round(risk)));
-  const quality = [values.income, values.expenses, values.businessAge, values.amount].every(Number.isFinite) && values.name.trim() ? 'Bonne : les champs essentiels sont renseignes.' : 'Incomplete : verifier le dossier avant toute decision.';
-  if (!rules.length) rules.push('Aucune regle bloquante declenchee');
-  return { risk, positives, negatives, rules, quality, capacity, installment };
+  risque = Math.max(5, Math.min(95, Math.round(risque)));
+  const qualite = [dossier.revenu, dossier.charges, dossier.ancienneteActivite, dossier.montant].every(Number.isFinite) && dossier.nom.trim() ? 'Bonne : les champs essentiels sont renseignes.' : 'Incomplete : verifier le dossier avant toute decision.';
+  return { risque, favorables, vigilances, regles: regles.length ? regles : ['Aucune regle bloquante declenchee'], qualite };
 }
 
-function display(assessment, values) {
-  const label = assessment.risk < 30 ? 'Risque faible' : assessment.risk < 60 ? 'Risque modere' : 'Risque eleve';
-  const recommendation = assessment.risk < 30 ? 'A examiner favorablement par l\'agent.' : assessment.risk < 60 ? 'Demander une verification complementaire avant decision.' : 'A ne pas valider sans analyse humaine approfondie.';
-  document.querySelector('#risk-label').textContent = label;
-  document.querySelector('#risk-score').textContent = assessment.risk;
-  document.querySelector('#recommendation').textContent = recommendation;
-  document.querySelector('#data-quality').textContent = assessment.quality;
-  renderList('#positive-factors', assessment.positives);
-  renderList('#negative-factors', assessment.negatives);
-  renderList('#rules', assessment.rules);
-  result.classList.remove('hidden');
-  const item = document.createElement('li');
-  item.textContent = `${values.name} - ${label.toLowerCase()} (${assessment.risk}/100) - demande ${format(values.amount)}`;
-  if (historyList.textContent.includes('Aucune analyse')) historyList.innerHTML = '';
-  historyList.prepend(item);
+function afficherResultat(evaluation, dossier) {
+  const libelle = evaluation.risque < 30 ? 'Risque faible' : evaluation.risque < 60 ? 'Risque modere' : 'Risque eleve';
+  const recommandation = evaluation.risque < 30 ? "A examiner favorablement par l'agent." : evaluation.risque < 60 ? 'Demander une verification complementaire avant decision.' : 'A ne pas valider sans analyse humaine approfondie.';
+  document.querySelector('#libelle-risque').textContent = libelle;
+  document.querySelector('#score-risque').textContent = evaluation.risque;
+  document.querySelector('#recommandation-agent').textContent = recommandation;
+  document.querySelector('#qualite-donnees').textContent = evaluation.qualite;
+  afficherListe('#facteurs-favorables', evaluation.favorables);
+  afficherListe('#points-vigilance', evaluation.vigilances);
+  afficherListe('#regles-declenchees', evaluation.regles);
+  resultat.classList.remove('masque');
+  const element = document.createElement('li');
+  element.textContent = `${dossier.nom} - ${libelle.toLowerCase()} (${evaluation.risque}/100) - demande ${formaterMontant(dossier.montant)}`;
+  if (listeJournal.textContent.includes('Aucune analyse')) listeJournal.innerHTML = '';
+  listeJournal.prepend(element);
 }
 
-function valuesFromForm() {
-  return { name: document.querySelector('#name').value, sector: document.querySelector('#sector').value, amount: Number(document.querySelector('#amount').value), income: Number(document.querySelector('#income').value), expenses: Number(document.querySelector('#expenses').value), businessAge: Number(document.querySelector('#business-age').value), latePayments: Number(document.querySelector('#late-payments').value), tontine: document.querySelector('#tontine').value };
+function lireDossier() {
+  return { nom: document.querySelector('#nom').value, secteur: document.querySelector('#secteur').value, montant: Number(document.querySelector('#montant').value), revenu: Number(document.querySelector('#revenu').value), charges: Number(document.querySelector('#charges').value), ancienneteActivite: Number(document.querySelector('#anciennete-activite').value), nombreRetards: Number(document.querySelector('#nombre-retards').value), regulariteTontine: document.querySelector('#regularite-tontine').value };
 }
-form.addEventListener('submit', (event) => { event.preventDefault(); latest = valuesFromForm(); display(analyse(latest), latest); });
-document.querySelector('#simulate').addEventListener('click', () => { if (!latest) return; document.querySelector('#amount').value = Math.round(latest.amount * .8 / 5000) * 5000; latest = valuesFromForm(); display(analyse(latest), latest); });
-document.querySelector('#clear-history').addEventListener('click', () => { historyList.innerHTML = '<li>Aucune analyse dans cette session.</li>'; });
+formulaire.addEventListener('submit', (evenement) => { evenement.preventDefault(); dernierDossier = lireDossier(); afficherResultat(analyser(dernierDossier), dernierDossier); });
+document.querySelector('#simuler').addEventListener('click', () => { if (!dernierDossier) return; document.querySelector('#montant').value = Math.round(dernierDossier.montant * .8 / 5000) * 5000; dernierDossier = lireDossier(); afficherResultat(analyser(dernierDossier), dernierDossier); });
+document.querySelector('#effacer-journal').addEventListener('click', () => { listeJournal.innerHTML = '<li>Aucune analyse dans cette session.</li>'; });

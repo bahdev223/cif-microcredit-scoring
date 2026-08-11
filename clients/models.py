@@ -2,14 +2,14 @@ from django.db import models
 
 
 class Client(models.Model):
-    full_name = models.CharField(max_length=160)
-    sector = models.CharField(max_length=80)
-    monthly_income = models.PositiveIntegerField()
-    monthly_expenses = models.PositiveIntegerField()
-    business_age_months = models.PositiveIntegerField()
-    late_payments = models.PositiveSmallIntegerField(default=0)
-    tontine_regularity = models.CharField(max_length=20, default="unknown")
-    created_at = models.DateTimeField(auto_now_add=True)
+    nom_complet = models.CharField(max_length=160)
+    secteur_activite = models.CharField(max_length=80)
+    revenu_mensuel = models.PositiveIntegerField()
+    charges_mensuelles = models.PositiveIntegerField()
+    anciennete_activite_mois = models.PositiveIntegerField()
+    nombre_retards = models.PositiveSmallIntegerField(default=0)
+    regularite_tontine = models.CharField(max_length=20, default="inconnue")
+    cree_le = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.full_name
+        return self.nom_complet

@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import analyze_credit, health
+from .views import analyser_demande_credit, etat_service
 
 urlpatterns = [
-    path("health/", health, name="health"),
-    path("credit-applications/analyze/", analyze_credit, name="analyze-credit"),
+    path("etat/", etat_service, name="etat-service"),
+    path("demandes-credit/analyser/", analyser_demande_credit, name="analyser-demande-credit"),
 ]

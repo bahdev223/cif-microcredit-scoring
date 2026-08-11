@@ -4,36 +4,36 @@ Base locale : `http://127.0.0.1:8000`
 
 ## Etat du service
 
-`GET /api/health/`
+`GET /api/etat/`
 
 Reponse :
 
 ```json
-{"status":"ok","service":"cif-microcredit-scoring"}
+{"etat":"operationnel","service":"evaluation-microcredit-cif"}
 ```
 
-## Analyser une demande
+## Analyser une demande de credit
 
-`POST /api/credit-applications/analyze/`
+`POST /api/demandes-credit/analyser/`
 
 ```json
 {
-  "full_name": "Fatou Traore",
-  "sector": "Commerce",
-  "monthly_income": 180000,
-  "monthly_expenses": 65000,
-  "business_age_months": 36,
-  "late_payments": 0,
-  "tontine_regularity": "good",
-  "amount": 300000,
-  "term_months": 12
+  "nom_complet": "Fatou Traore",
+  "secteur_activite": "Commerce",
+  "revenu_mensuel": 180000,
+  "charges_mensuelles": 65000,
+  "anciennete_activite_mois": 36,
+  "nombre_retards": 0,
+  "regularite_tontine": "reguliere",
+  "montant_demande": 300000,
+  "duree_mois": 12
 }
 ```
 
-Les valeurs de `tontine_regularity` sont `good`, `medium` ou `none`. La reponse contient le score indicatif, le niveau de risque, la recommandation et les facteurs expliques. Chaque appel valide cree aussi un journal d'audit.
+Les valeurs de `regularite_tontine` sont `reguliere`, `partielle` ou `inconnue`. La reponse contient `score_risque`, `niveau_risque`, `recommandation` et `explication`. Chaque appel valide cree aussi un journal d'audit.
 
 Exemple Windows PowerShell :
 
 ```powershell
-Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/credit-applications/analyze/ -ContentType 'application/json' -Body '{"full_name":"Fatou Traore","sector":"Commerce","monthly_income":180000,"monthly_expenses":65000,"business_age_months":36,"late_payments":0,"tontine_regularity":"good","amount":300000}'
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/demandes-credit/analyser/ -ContentType 'application/json' -Body '{"nom_complet":"Fatou Traore","secteur_activite":"Commerce","revenu_mensuel":180000,"charges_mensuelles":65000,"anciennete_activite_mois":36,"nombre_retards":0,"regularite_tontine":"reguliere","montant_demande":300000}'
 ```

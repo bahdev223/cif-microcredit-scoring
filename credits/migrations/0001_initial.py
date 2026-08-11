@@ -14,16 +14,16 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='CreditApplication',
+            name='DemandeCredit',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('amount', models.PositiveIntegerField()),
-                ('term_months', models.PositiveSmallIntegerField(default=12)),
-                ('risk_score', models.PositiveSmallIntegerField(blank=True, null=True)),
-                ('risk_level', models.CharField(blank=True, max_length=20)),
-                ('decision', models.CharField(default='PENDING', max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('client', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='applications', to='clients.client')),
+                ('montant_demande', models.PositiveIntegerField()),
+                ('duree_mois', models.PositiveSmallIntegerField(default=12)),
+                ('score_risque', models.PositiveSmallIntegerField(blank=True, null=True)),
+                ('niveau_risque', models.CharField(blank=True, max_length=20)),
+                ('decision_agent', models.CharField(default='EN_ATTENTE', max_length=20)),
+                ('cree_le', models.DateTimeField(auto_now_add=True)),
+                ('client', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='demandes_credit', to='clients.client')),
             ],
         ),
     ]
