@@ -1,8 +1,17 @@
 # Architecture et evolution
 
-## V0
+## V0 Django
 
-Une application statique : `index.html`, `styles.css` et `app.js`. Elle fonctionne hors ligne dans un navigateur et ne transmet aucune donnee.
+```text
+clients/     # profil economique du client
+credits/     # demande de credit et son resultat
+scoring/     # features, regles, predictor et explication
+audit/       # trace de chaque analyse
+api/         # endpoints REST
+config/      # configuration Django
+```
+
+L'endpoint `POST /api/credit-applications/analyze/` persiste un client et une demande, calcule le score et enregistre l'analyse dans l'audit.
 
 ## Evolution cible, seulement apres validation
 
