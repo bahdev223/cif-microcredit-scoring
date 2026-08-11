@@ -1,10 +1,11 @@
 <!doctype html>
 <html lang="fr">
+  {% load static %}
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CIF | Analyse microcredit</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="{% static 'styles.css' %}" />
   </head>
   <body>
     <header>
@@ -57,6 +58,6 @@
       <section class="carte historique"><div class="titre-section"><h2>Journal local</h2><button id="effacer-journal" class="bouton-lien" type="button">Effacer</button></div><ul id="liste-journal"><li>Aucune analyse dans cette session.</li></ul></section>
     </main>
     <footer>Prototype de demonstration - donnees fictives - ne remplace pas l'analyse de l'agent.</footer>
-    <script src="app.js"></script>
+    <script src="{% static 'app.js' %}"></script>
   </body>
 </html>

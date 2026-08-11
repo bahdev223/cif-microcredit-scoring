@@ -14,7 +14,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Verifier ensuite `GET /api/etat/` ou appeler `POST /api/demandes-credit/analyser/`.
+Ouvrir ensuite `http://127.0.0.1:8000/` pour le prototype, verifier `GET /api/etat/` ou appeler `POST /api/demandes-credit/analyser/`.
 
 ## Contenu de cette V0
 
