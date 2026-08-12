@@ -21,6 +21,13 @@
         <button id="recharger-cas" class="bouton-lien" type="button">Recharger le cas Fatou</button>
       </section>
 
+      <section class="carte chargement-donnees">
+        <p class="surtitre">Charger un dossier fictif</p>
+        <label for="fichier-dossier">Sélectionner un fichier JSON</label>
+        <input id="fichier-dossier" type="file" accept="application/json,.json" />
+        <p id="message-chargement" class="aide">Exemple prêt à charger : <code>donnees_fictives/cas_fatou.json</code>.</p>
+      </section>
+
       <form id="formulaire-dossier">
         <section class="carte">
           <p class="surtitre">1. Identité et demande</p>

@@ -1,0 +1,21 @@
+{
+  "nom_complet": "Fatou Traore",
+  "secteur_activite": "Commerce alimentaire",
+  "objet_credit": "Achat de marchandises",
+  "montant_demande": 500000,
+  "duree_mois": 12,
+  "chiffre_affaires": 700000,
+  "achats_marchandises": 400000,
+  "loyer_activite": 50000,
+  "transport_activite": 30000,
+  "autres_charges_activite": 40000,
+  "alimentation": 50000,
+  "logement": 30000,
+  "transport_personnel": 15000,
+  "autres_depenses_menage": 25000,
+  "mensualite_dette_existante": 20000,
+  "anciennete_activite_mois": 60,
+  "nombre_retards": 2,
+  "regularite_tontine": "reguliere",
+  "credits_termines": 3
+}

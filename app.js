@@ -11,7 +11,14 @@ const formaterMontant = (valeur) => new Intl.NumberFormat('fr-FR').format(Math.r
 const valeur = (identifiant) => Number(document.querySelector(`#${identifiant}`).value) || 0;
 
 function chargerCasFatou() {
-  champs.forEach((champ) => { document.querySelector(`#${champ}`).value = casFatou[champ]; });
+  chargerDossier(casFatou);
+}
+
+function chargerDossier(dossier) {
+  champs.forEach((champ) => {
+    if (dossier[champ] === undefined) throw new Error(`Le champ obligatoire « ${champ} » est absent.`);
+    document.querySelector(`#${champ}`).value = dossier[champ];
+  });
   mettreAJourCalculs();
 }
 
@@ -71,6 +78,20 @@ document.querySelector('#formulaire-dossier').addEventListener('submit', async (
   finally { bouton.disabled = false; bouton.textContent = 'Analyser le dossier de Fatou'; }
 });
 document.querySelector('#recharger-cas').addEventListener('click', chargerCasFatou);
+document.querySelector('#fichier-dossier').addEventListener('change', async (evenement) => {
+  const fichier = evenement.target.files[0];
+  const message = document.querySelector('#message-chargement');
+  if (!fichier) return;
+  try {
+    const contenu = JSON.parse(await fichier.text());
+    if (Array.isArray(contenu)) throw new Error('Ce fichier contient plusieurs dossiers. Charge un dossier unique comme cas_fatou.json.');
+    chargerDossier(contenu);
+    message.textContent = `Dossier « ${contenu.nom_complet} » chargé. Tu peux maintenant l'analyser.`;
+  } catch (erreur) {
+    message.textContent = `Chargement impossible : ${erreur.message}`;
+    evenement.target.value = '';
+  }
+});
 document.querySelector('#simuler-montant').addEventListener('click', () => { document.querySelector('#montant_demande').value = Math.round(valeur('montant_demande') * 0.8 / 5000) * 5000; document.querySelector('#formulaire-dossier').requestSubmit(); });
 champs.filter((champ) => document.querySelector(`#${champ}`).type === 'number').forEach((champ) => document.querySelector(`#${champ}`).addEventListener('input', mettreAJourCalculs));
 chargerCasFatou();
