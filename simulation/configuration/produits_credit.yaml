@@ -11,3 +11,9 @@ produits:
     montant_max: 800000
     duree_min_mois: 6
     duree_max_mois: 12
+  - code: EQUIPEMENT
+    nom: "Petit équipement"
+    montant_min: 150000
+    montant_max: 1000000
+    duree_min_mois: 12
+    duree_max_mois: 24
