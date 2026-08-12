@@ -1,38 +1,63 @@
-# CIF - Evaluation du risque de microcredit
+# CIF — Évaluation du risque de microcrédit
 
-Prototype V0 Django d'aide a la decision pour un agent de microfinance. Il analyse un dossier client, estime un niveau de risque et explique clairement les facteurs pris en compte. La decision de credit reste toujours humaine.
+Prototype Django d'aide à la décision pour les agents de microfinance. Il permet de saisir ou charger un dossier fictif, d'estimer un risque avec des règles transparentes et d'expliquer le résultat. La décision d'octroi reste humaine.
 
-## Lancer le prototype
+> Les données et résultats sont pédagogiques et fictifs. Ne pas utiliser ce prototype pour accorder ou refuser un crédit réel.
 
-Creer un environnement Python puis installer les dependances :
+## Démarrage rapide
 
-```bash
+Prérequis : Python 3.12 ou plus récent et Git.
+
+```powershell
+git clone https://github.com/bahdev223/cif-microcredit-scoring.git
+cd cif-microcredit-scoring
 python -m venv .venv
-.venv\\Scripts\\activate
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 python backend/manage.py migrate
 python backend/manage.py runserver
 ```
 
-Ouvrir ensuite `http://127.0.0.1:8000/` pour le prototype, verifier `GET /api/etat/` ou appeler `POST /api/demandes-credit/analyser/`.
+Ouvrir [http://127.0.0.1:8000/](http://127.0.0.1:8000/). L'écran charge Fatou au démarrage ; le dossier peut être modifié ou remplacé par un JSON de `donnees/echantillons/`.
 
-## Contenu de cette V0
+## Parcours disponibles
 
-- API de creation et analyse d'une demande de microcredit;
-- estimation transparente du risque, basee sur des regles simples;
-- explication des facteurs positifs et negatifs;
-- persistance des clients, demandes et journaux d'audit SQLite.
+| Besoin | Accès ou commande |
+| --- | --- |
+| Saisir et analyser un dossier | [http://127.0.0.1:8000/](http://127.0.0.1:8000/) |
+| Vérifier l'API | [http://127.0.0.1:8000/api/etat/](http://127.0.0.1:8000/api/etat/) |
+| Administrer les dossiers | [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/) |
+| Générer le monde fictif | `python simulation/generer.py` |
+| Contrôler les données | `python tests/verifier_monde.py` |
+
+La génération réécrit les CSV sous `donnees/synthetiques/`. Lancer ensuite les contrôles avant toute publication.
+
+## Organisation
+
+```text
+backend/          application Django, API, règles et audit
+frontend/         écran de démonstration, styles et JavaScript
+donnees/          échantillons, données synthétiques et publiques
+simulation/       configuration et générateur du monde fictif
+laboratoires/     notebooks data science
+modeles/          modèles entraînés et registre
+documentation/    documentation produit, technique et data
+tests/            contrôles automatiques du simulateur
+```
+
+Le détail est dans le [guide technique de l'environnement](documentation/08-guide-technique-environnement.md).
 
 ## Documentation
 
+- [Index de la documentation](documentation/README.md)
 - [Vision produit](documentation/01-vision-produit.md)
-- [Regles et donnees](documentation/02-regles-et-donnees.md)
-- [Architecture et evolution](documentation/03-architecture-et-evolution.md)
-- [Guide de demonstration](documentation/04-guide-demo.md)
+- [Règles et données](documentation/02-regles-et-donnees.md)
+- [Architecture](documentation/03-architecture-et-evolution.md)
+- [Guide de démonstration](documentation/04-guide-demo.md)
 - [Contrat API](documentation/05-api.md)
-- [Spécification du laboratoire synthétique](documentation/06-laboratoire-synthetique.md)
-- [Données fictives chargeables et versionnées](donnees/README.md)
+- [Laboratoire synthétique](documentation/06-laboratoire-synthetique.md)
+- [Dictionnaire des données synthétiques](documentation/07-dictionnaire-donnees-synthetiques.md)
+- [Guide technique : installation, exécution et structure](documentation/08-guide-technique-environnement.md)
+- [Données fictives](donnees/README.md)
 
-## Limite importante
-
-Cette V0 est une demo de hackathon avec des donnees fictives et des regles pedagogiques. Elle ne doit pas servir a accorder ou refuser un credit reel avant validation metier, juridique, statistique et securitaire.

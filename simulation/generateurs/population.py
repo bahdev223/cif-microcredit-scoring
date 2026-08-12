@@ -80,6 +80,7 @@ def _calendrier_arrivees(nombre_clients, profil_latent, debut_du_monde, fin_du_m
 def generer_clients(institution, profil_latent, mix_sectoriel, agences, nombre_clients,
                     graine, debut_du_monde, fin_du_monde, premier_numero=1):
     identifiant_institution = institution["identifiant_institution"]
+    ouverture_la_plus_ancienne = min(date.fromisoformat(agence["date_ouverture"]) for agence in agences)
     stock_initial, arrivees = _calendrier_arrivees(nombre_clients, profil_latent, debut_du_monde, fin_du_monde)
 
     # File des dates d'entrée, construite avant les clients pour rester stable.
@@ -104,12 +105,19 @@ def generer_clients(institution, profil_latent, mix_sectoriel, agences, nombre_c
         if SCENARIOS[scenario].get("entree_recente"):
             date_entree = ajouter_jours(fin_du_monde, -aleatoire.randint(30, 365))
 
-        agences_ouvertes = [
+        # Un client ne peut pas entrer en relation avant qu'une agence existe.
+        # Chez une institution jeune, cela raccourcit mécaniquement le stock
+        # initial : c'est le bon comportement, pas une limite à contourner.
+        date_entree = max(date_entree, ouverture_la_plus_ancienne)
+        ouvertes = [
             agence for agence in agences
             if date.fromisoformat(agence["date_ouverture"]) <= date_entree
-            and (not agence["date_fermeture"] or date.fromisoformat(agence["date_fermeture"]) > date_entree)
         ]
-        agence = aleatoire.choice(agences_ouvertes or agences)
+        en_activite = [
+            agence for agence in ouvertes
+            if not agence["date_fermeture"] or date.fromisoformat(agence["date_fermeture"]) > date_entree
+        ]
+        agence = aleatoire.choice(en_activite or ouvertes)
 
         discipline = _valeur_ou_defaut(
             aleatoire, scenario, "discipline",

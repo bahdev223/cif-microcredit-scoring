@@ -2,17 +2,45 @@
   "version_monde": "1.0.0",
   "graine_aleatoire": 2026,
   "scenario": "base",
-  "institutions": "INS-001",
-  "clients_par_institution": 100,
-  "date_generation": "2026-08-12T23:31:04+00:00",
-  "commit_code": "e80a57a1afc7c99e56db15bc8444cebf939bd36d",
+  "institutions": "toutes",
+  "clients_par_institution": "cible du profil",
+  "date_generation": "2026-08-12T23:40:56+00:00",
+  "commit_code": "90f94d8759f683403bc836197a61af17e9f65d4c",
   "calibration": [
     {
-      "taux_acceptation": 0.7471264367816092,
-      "taux_defaut": 0.10638297872340426,
-      "biais_acceptation": -0.39289078947533657,
-      "biais_paiement": 0.9556396339223086,
+      "taux_acceptation": 0.7532803180914512,
+      "taux_defaut": 0.08804923918618568,
+      "biais_acceptation": -0.15559135690372072,
+      "biais_paiement": 1.2020205208200632,
+      "iterations": 7
+    },
+    {
+      "taux_acceptation": 0.7074660867764316,
+      "taux_defaut": 0.13460381143430292,
+      "biais_acceptation": -0.5155864523106524,
+      "biais_paiement": 0.6669822887885588,
+      "iterations": 5
+    },
+    {
+      "taux_acceptation": 0.6458403692446245,
+      "taux_defaut": 0.10826281732205077,
+      "biais_acceptation": -0.43961067506746654,
+      "biais_paiement": 1.100211536474025,
       "iterations": 6
+    },
+    {
+      "taux_acceptation": 0.7257886830245368,
+      "taux_defaut": 0.1079008382379169,
+      "biais_acceptation": -0.37633183994495895,
+      "biais_paiement": 0.929787053754559,
+      "iterations": 6
+    },
+    {
+      "taux_acceptation": 0.8450236361313402,
+      "taux_defaut": 0.1978021978021978,
+      "biais_acceptation": 0.4990403181752925,
+      "biais_paiement": 0.2451637667888976,
+      "iterations": 3
     }
   ],
   "fichiers": {
@@ -21,12 +49,12 @@
       "sha256": "3bbf497f4b87323429f16045d4f4fd4516b41afd2d1ca5351d5ce3f7deca7990"
     },
     "donnees/synthetiques/brutes/02_agences.csv": {
-      "lignes": 2,
-      "sha256": "b46da33be3c3f7735be7a2ef0ed405a51257636665337ea6cac3310d4210ae78"
+      "lignes": 41,
+      "sha256": "4408372f4408c983d4cc11ef862a214bc6e86f5a73ff361f4c62aa9e63154673"
     },
     "donnees/synthetiques/brutes/03_agents_credit.csv": {
-      "lignes": 3,
-      "sha256": "d5f1d25d175554eed2e9181d57045c0b12761f870590f9a87327f3afdbd4489c"
+      "lignes": 170,
+      "sha256": "e648967e833b73efb83e482e7ab69f909bfd680a5e4afb2065c7fb07f4b827b5"
     },
     "donnees/synthetiques/brutes/04_produits_credit.csv": {
       "lignes": 5,
@@ -37,40 +65,40 @@
       "sha256": "57ae2c6a6189ed3e9e0081a4d4ce789b3ef70baa3c0c17644c74f2bbe5c94ce2"
     },
     "donnees/synthetiques/brutes/06_clients.csv": {
-      "lignes": 100,
-      "sha256": "e452fcc2450e34f37294d988da192cb8a0a608c1fd1fcdfc5f2e119a19d8c1fc"
+      "lignes": 50000,
+      "sha256": "0241058677ba9adbac531284bc61d75aad1da6e456b02133e39e3ce4cc30982e"
     },
     "donnees/synthetiques/brutes/07_activites.csv": {
-      "lignes": 119,
-      "sha256": "4adafe2808d438e06e569a7c8735b31b9ab1e12fa8c1f41c816631ba31556621"
+      "lignes": 61605,
+      "sha256": "de6f87a3e010d41bf1867df8a562ece28535bcec0bac02566c4eb55d577f383f"
     },
     "donnees/synthetiques/brutes/07b_releves_activite.csv": {
-      "lignes": 279,
-      "sha256": "f14a145ed60c2f31393742640ad9dd9f02b7a49d60cd3a36a445fda957bdf91f"
+      "lignes": 155289,
+      "sha256": "78353beb048d35f94225566e331b8fe994051027c21c8674fffe9152abdc6362"
     },
     "donnees/synthetiques/brutes/09_demandes_credit.csv": {
-      "lignes": 87,
-      "sha256": "fffefbfed56a702443108fc1b6a1d4fdbce02e8a593f2e8140e2d3a913339092"
+      "lignes": 46412,
+      "sha256": "8eb82bd023689eb36b0291e4054152b25cbf9649823d94b7e48165ce59dab729"
     },
     "donnees/synthetiques/brutes/10_decisions_credit.csv": {
-      "lignes": 87,
-      "sha256": "df1387d9ec90783994a77495ec1d543dcb03fc150596764163e9e3b4e28c868b"
+      "lignes": 46412,
+      "sha256": "2eff310b660d50bf1368f6760d2614e3f21f7c7f73069c06c8c1a8f591a3b736"
     },
     "donnees/synthetiques/brutes/11_credits.csv": {
-      "lignes": 65,
-      "sha256": "bdbd2a65cd6fe9ce0955217a9818b451f4a6f7ed982336e705d13e4f4341b9b1"
+      "lignes": 34008,
+      "sha256": "084eebd0d2163c1fdeb042b0bfe3c460c463b14a0c29f96b0d79e15a832900da"
     },
     "donnees/synthetiques/brutes/12_echeances.csv": {
-      "lignes": 648,
-      "sha256": "a331302e604078947e036b8b424c18222286952a5d7de9c53d1f2be23487c5d2"
+      "lignes": 312930,
+      "sha256": "e6df732814e385788b83f00d33eac7e2b50b9b33a45d7f50455c779124221505"
     },
     "donnees/synthetiques/brutes/13_paiements.csv": {
-      "lignes": 521,
-      "sha256": "b6345a3254b71e36be6eaa26760478de2288c54b3f121efc4a4972a35e68c4dd"
+      "lignes": 259682,
+      "sha256": "d4928d756030443c9d4e653e06c8aea433bfd53d3b59a273236e1b2f006ed281"
     },
     "donnees/synthetiques/traitees/14_resultats_credit.csv": {
-      "lignes": 65,
-      "sha256": "f87de9f444bc61e0abe38c137e8cda0b0d442476127b96e29df70628e3653171"
+      "lignes": 34008,
+      "sha256": "8299b91bb541eefb163acb58e6e009bc35b2e86018b3b728a5b4635cd691aff1"
     },
     "donnees/synthetiques/verite/01_mix_produits.csv": {
       "lignes": 25,
@@ -85,44 +113,44 @@
       "sha256": "fc3dffb26007e31dc21b1e05f4f597e0966ac2e2df5de0e0d9cc540508cd0be2"
     },
     "donnees/synthetiques/verite/03_profils_agents.csv": {
-      "lignes": 3,
-      "sha256": "3a56207879bf9ddef5faa18b5a3b35e46b72991e38057d4ad8ebea953d1dd022"
+      "lignes": 170,
+      "sha256": "3ecd614db304da3a05b5978cf5f03a1baa6f31d5277c312417c61eb0e6b8bbae"
     },
     "donnees/synthetiques/verite/05_parametres_secteurs.csv": {
       "lignes": 8,
       "sha256": "64289227e944c4e9c5d1b5824e9f4d9dbd9e5e7032bb9a98d155a5c06157625d"
     },
     "donnees/synthetiques/verite/06_profils_latents.csv": {
-      "lignes": 100,
-      "sha256": "a8b61b7a0f7eb3980de42c28d5b13fea6401209e5a20eb37320a14fa6362405d"
+      "lignes": 50000,
+      "sha256": "50f61a13333c44401ecaaee28b7ce619e13697d68975c306c3d98aeb3f5c9621"
     },
     "donnees/synthetiques/verite/07_parametres_activites.csv": {
-      "lignes": 119,
-      "sha256": "d0ec70c972506978dae1eb810f05b2f1d375725bc966fe9795a00436a141003a"
+      "lignes": 61605,
+      "sha256": "f4839236ea17ada4a688d59936bbcfd4e7c0e6621cca593e458011ce42058165"
     },
     "donnees/synthetiques/verite/08_situations_mensuelles.csv": {
-      "lignes": 3112,
-      "sha256": "5b76d087e82bfb9fd6bb0c0a04c1006f122ad2a8c512754ff6061d0aa0eea360"
+      "lignes": 1671689,
+      "sha256": "3bc93cc97b402a1f05ae3c563ad4cb22f07d69e0ea120aa7cb2f9ce598261650"
     },
     "donnees/synthetiques/verite/08b_capacite_mensuelle.csv": {
-      "lignes": 2712,
-      "sha256": "68b0aedffb05c9d267ec68796e397a29d78b1333bcc2491cd26442050aac9044"
+      "lignes": 1366005,
+      "sha256": "95f761faa9d7eb9e13d1ffe8d9ef045f14e6927251e5888c975a8c62c97d6c73"
     },
     "donnees/synthetiques/verite/09_evenements.csv": {
-      "lignes": 139,
-      "sha256": "2f4ded9514ed1962e321bd0261c2c10d896e394b307d4a57873232fb6d4be81d"
+      "lignes": 62823,
+      "sha256": "9e0aeb98985cb1cb91c86534fa070e55f71aa724aaee6f0397cd28be35a12ba4"
     },
     "donnees/synthetiques/verite/09b_contexte_macro.csv": {
       "lignes": 480,
       "sha256": "d55f3139407404f2805eb0f821225bfb2d22e901ee3f5e7719bbe2e7fd9a60ed"
     },
     "donnees/synthetiques/verite/10_decisions_contrefactuelles.csv": {
-      "lignes": 17,
-      "sha256": "6d226ddb2b1c63215d6845d7889f7b48063f23f204698e752a0a5aaade77ff90"
+      "lignes": 10964,
+      "sha256": "27bed593d0d0a4e9aecc557e02995633af4a0690d947e8c6ec331a0fa95cb00e"
     },
     "donnees/synthetiques/verite/qualite_injectee.csv": {
-      "lignes": 74,
-      "sha256": "a8a08ad90f4203cc9ca09718649f4a9ee8ec174e84182d0e70e34fdc232d2b63"
+      "lignes": 59010,
+      "sha256": "2414ab692b0f90f26719e3accaaaec8e3dcd8abbf93ca8a336fb55375daded6f"
     }
   }
 }

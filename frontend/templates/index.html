@@ -4,28 +4,46 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CIF - Simulation du dossier Fatou</title>
+    <title>CIF — Démonstration du scoring de microcrédit</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}" />
   </head>
   <body>
     <header>
       <p class="surtitre">CIF DigiCoop-WA+ · Démonstration</p>
-      <h1>Tester le dossier de Fatou</h1>
-      <p>Une fiche de saisie complète, puis une analyse explicable. Le résultat reste une aide à la décision.</p>
+      <h1>Analyser un dossier de microcrédit</h1>
+      <p>Testez un dossier fictif, contrôlez les calculs et obtenez une explication lisible du niveau de risque. Le résultat reste une aide à la décision.</p>
     </header>
 
     <main>
+      <section class="carte ressources">
+        <div class="titre-section">
+          <div>
+            <p class="surtitre">Parcours de démonstration</p>
+            <h2>Tout est prêt pour tester</h2>
+          </div>
+          <span class="pastille">Données fictives</span>
+        </div>
+        <div class="liens-ressources">
+          <a href="/api/etat/" target="_blank" rel="noreferrer">État de l’API</a>
+          <a href="/admin/" target="_blank" rel="noreferrer">Administration</a>
+          <a href="https://github.com/bahdev223/cif-microcredit-scoring/blob/main/documentation/08-guide-technique-environnement.md" target="_blank" rel="noreferrer">Guide technique</a>
+          <a href="https://github.com/bahdev223/cif-microcredit-scoring/blob/main/documentation/05-api.md" target="_blank" rel="noreferrer">Documentation API</a>
+        </div>
+      </section>
+
       <section class="carte bandeau-cas">
-        <strong>Cas pédagogique prérempli</strong>
-        <span>Fatou, commerce alimentaire · demande de 500 000 FCFA pour augmenter son stock.</span>
-        <button id="recharger-cas" class="bouton-lien" type="button">Recharger le cas Fatou</button>
+        <div>
+          <strong>Cas pédagogique prérempli</strong>
+          <span>Fatou Traoré, commerce alimentaire · demande de 500 000 FCFA pour augmenter son stock.</span>
+        </div>
+        <button id="recharger-cas" class="bouton-lien" type="button">Recharger Fatou</button>
       </section>
 
       <section class="carte chargement-donnees">
         <p class="surtitre">Charger un dossier fictif</p>
         <label for="fichier-dossier">Sélectionner un fichier JSON</label>
         <input id="fichier-dossier" type="file" accept="application/json,.json" />
-        <p id="message-chargement" class="aide">Exemple prêt à charger : <code>donnees/echantillons/cas_fatou.json</code>.</p>
+        <p id="message-chargement" class="aide">Exemple : <code>donnees/echantillons/cas_fatou.json</code>. Un seul dossier JSON à la fois.</p>
       </section>
 
       <form id="formulaire-dossier">
@@ -42,7 +60,7 @@
 
         <section class="carte">
           <p class="surtitre">2. Activité économique mensuelle</p>
-          <p class="aide">Le système calcule le résultat de l'activité : chiffre d'affaires moins charges d'activité.</p>
+          <p class="aide">Résultat de l'activité = chiffre d'affaires − charges d'activité.</p>
           <div class="grille-formulaire">
             <label>Chiffre d'affaires<input id="chiffre_affaires" type="number" min="0" required /></label>
             <label>Achats de marchandises<input id="achats_marchandises" type="number" min="0" required /></label>
@@ -76,7 +94,7 @@
           </div>
         </section>
 
-        <button class="bouton-principal" type="submit">Analyser le dossier de Fatou</button>
+        <button class="bouton-principal" type="submit">Analyser ce dossier</button>
       </form>
 
       <section id="resultat" class="resultats masque" aria-live="polite">
@@ -85,7 +103,7 @@
           <h2 id="niveau-risque">Analyse en attente</h2>
           <p class="score"><span id="score-risque">--</span><small>/100</small></p>
           <p id="recommandation-agent"></p>
-          <button id="simuler-montant" class="secondaire" type="button">Simuler -20 % du montant</button>
+          <button id="simuler-montant" class="secondaire" type="button">Simuler −20 % du montant</button>
         </div>
         <div class="details-analyse">
           <article class="carte"><h3>Indicateurs calculés</h3><ul id="indicateurs"></ul></article>
@@ -95,7 +113,8 @@
         </div>
       </section>
     </main>
-    <footer>Cas fictif destiné à une démonstration. La décision finale appartient à l’agent de crédit.</footer>
+    <footer>Cas fictif de démonstration. La décision finale appartient à l’agent de crédit.</footer>
     <script src="{% static 'app.js' %}"></script>
   </body>
 </html>
+
