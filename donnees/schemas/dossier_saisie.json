@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dossier fictif de microcrédit",
+  "type": "object",
+  "required": [
+    "nom_complet", "secteur_activite", "objet_credit", "montant_demande", "duree_mois",
+    "chiffre_affaires", "achats_marchandises", "loyer_activite", "transport_activite",
+    "autres_charges_activite", "alimentation", "logement", "transport_personnel",
+    "autres_depenses_menage", "mensualite_dette_existante", "anciennete_activite_mois",
+    "nombre_retards", "regularite_tontine", "credits_termines"
+  ],
+  "properties": {
+    "nom_complet": {"type": "string", "minLength": 1},
+    "secteur_activite": {"type": "string", "minLength": 1},
+    "objet_credit": {"type": "string", "minLength": 1},
+    "montant_demande": {"type": "integer", "minimum": 10000},
+    "duree_mois": {"type": "integer", "minimum": 1, "maximum": 60},
+    "chiffre_affaires": {"type": "integer", "minimum": 0},
+    "achats_marchandises": {"type": "integer", "minimum": 0},
+    "loyer_activite": {"type": "integer", "minimum": 0},
+    "transport_activite": {"type": "integer", "minimum": 0},
+    "autres_charges_activite": {"type": "integer", "minimum": 0},
+    "alimentation": {"type": "integer", "minimum": 0},
+    "logement": {"type": "integer", "minimum": 0},
+    "transport_personnel": {"type": "integer", "minimum": 0},
+    "autres_depenses_menage": {"type": "integer", "minimum": 0},
+    "mensualite_dette_existante": {"type": "integer", "minimum": 0},
+    "anciennete_activite_mois": {"type": "integer", "minimum": 0},
+    "nombre_retards": {"type": "integer", "minimum": 0},
+    "regularite_tontine": {"enum": ["reguliere", "partielle", "inconnue"]},
+    "credits_termines": {"type": "integer", "minimum": 0}
+  }
+}

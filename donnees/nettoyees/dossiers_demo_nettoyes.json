@@ -1,0 +1,47 @@
+[
+  {
+    "nom_complet": "Fatou Traore",
+    "secteur_activite": "Commerce alimentaire",
+    "objet_credit": "Achat de marchandises",
+    "montant_demande": 500000,
+    "duree_mois": 12,
+    "chiffre_affaires": 700000,
+    "charges_activite": 520000,
+    "depenses_menage": 120000,
+    "mensualite_dette_existante": 20000,
+    "anciennete_activite_mois": 60,
+    "nombre_retards": 2,
+    "regularite_tontine": "reguliere",
+    "credits_termines": 3
+  },
+  {
+    "nom_complet": "Ibrahim Konate",
+    "secteur_activite": "Artisanat métallique",
+    "objet_credit": "Achat d'outillage",
+    "montant_demande": 300000,
+    "duree_mois": 12,
+    "chiffre_affaires": 620000,
+    "charges_activite": 370000,
+    "depenses_menage": 170000,
+    "mensualite_dette_existante": 20000,
+    "anciennete_activite_mois": 72,
+    "nombre_retards": 1,
+    "regularite_tontine": "reguliere",
+    "credits_termines": 2
+  },
+  {
+    "nom_complet": "Awa Diallo",
+    "secteur_activite": "Commerce de vêtements",
+    "objet_credit": "Renouvellement du stock",
+    "montant_demande": 450000,
+    "duree_mois": 12,
+    "chiffre_affaires": 1500000,
+    "charges_activite": 1420000,
+    "depenses_menage": 130000,
+    "mensualite_dette_existante": 25000,
+    "anciennete_activite_mois": 18,
+    "nombre_retards": 4,
+    "regularite_tontine": "partielle",
+    "credits_termines": 1
+  }
+]

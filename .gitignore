@@ -2,5 +2,6 @@
 Thumbs.db
 .vscode/
 *.sqlite3
+donnees/temporaires/
 __pycache__/
 *.pyc
