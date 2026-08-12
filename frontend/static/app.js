@@ -21,6 +21,7 @@ const casFatou = {
 };
 
 const champs = Object.keys(casFatou);
+let identifiantClientSelectionne = null;
 const formaterMontant = (valeur) => `${new Intl.NumberFormat('fr-FR').format(Math.round(valeur))} FCFA`;
 const valeur = (identifiant) => Number(document.querySelector(`#${identifiant}`).value) || 0;
 
@@ -32,6 +33,13 @@ function chargerDossier(dossier) {
     document.querySelector(`#${champ}`).value = dossier[champ];
   });
   mettreAJourCalculs();
+}
+
+function donneesClient() {
+  const donnees = donneesApi();
+  delete donnees.montant_demande;
+  delete donnees.duree_mois;
+  return donnees;
 }
 
 function mettreAJourCalculs() {
@@ -54,7 +62,7 @@ function afficherListe(selecteur, valeurs) {
 function donneesApi() {
   const resultatActivite = valeur('chiffre_affaires') - valeur('achats_marchandises') - valeur('loyer_activite') - valeur('transport_activite') - valeur('autres_charges_activite');
   const depensesMenage = valeur('alimentation') + valeur('logement') + valeur('transport_personnel') + valeur('autres_depenses_menage');
-  return {
+  const donnees = {
     nom_complet: document.querySelector('#nom_complet').value,
     secteur_activite: document.querySelector('#secteur_activite').value,
     revenu_mensuel: resultatActivite,
@@ -66,6 +74,8 @@ function donneesApi() {
     montant_demande: valeur('montant_demande'),
     duree_mois: valeur('duree_mois'),
   };
+  if (identifiantClientSelectionne) donnees.identifiant_client = identifiantClientSelectionne;
+  return donnees;
 }
 
 function afficherResultat(reponse) {
@@ -105,6 +115,7 @@ document.querySelector('#formulaire-dossier').addEventListener('submit', async (
     }
     if (!reponse.ok) throw new Error(contenu.erreur || 'Analyse impossible.');
     afficherResultat(contenu);
+    chargerListes();
   } catch (erreur) {
     alert(`Impossible d'analyser le dossier : ${erreur.message}`);
   } finally {
@@ -113,7 +124,103 @@ document.querySelector('#formulaire-dossier').addEventListener('submit', async (
   }
 });
 
-document.querySelector('#recharger-cas').addEventListener('click', () => chargerDossier(casFatou));
+async function appelJson(url, options = {}) {
+  const reponse = await fetch(url, options);
+  const contenu = await reponse.json();
+  if (!reponse.ok) throw new Error(contenu.erreur || 'Opération impossible.');
+  return contenu;
+}
+
+function afficherClients(clients) {
+  const liste = document.querySelector('#liste-clients');
+  liste.replaceChildren();
+  (clients.length ? clients : [{ nom_complet: 'Aucun client enregistré.' }]).forEach((client) => {
+    const element = document.createElement('li');
+    const bouton = document.createElement(client.identifiant ? 'button' : 'span');
+    bouton.textContent = client.identifiant
+      ? `${client.nom_complet} — ${client.secteur_activite}`
+      : client.nom_complet;
+    if (client.identifiant) {
+      bouton.className = 'bouton-lien';
+      bouton.type = 'button';
+      bouton.addEventListener('click', () => {
+        chargerDossier({ ...client, objet_credit: 'Besoin de fonds de roulement', montant_demande: 100000, duree_mois: 12, chiffre_affaires: client.revenu_mensuel, achats_marchandises: 0, loyer_activite: 0, transport_activite: 0, autres_charges_activite: 0, alimentation: client.charges_mensuelles, logement: 0, transport_personnel: 0, autres_depenses_menage: 0, credits_termines: 0 });
+        identifiantClientSelectionne = client.identifiant;
+        document.querySelector('#message-chargement').textContent = `Client « ${client.nom_complet} » sélectionné : la prochaine analyse créera une nouvelle demande pour ce client.`;
+      });
+    }
+    element.appendChild(bouton);
+    liste.appendChild(element);
+  });
+}
+
+function afficherDemandes(demandes) {
+  const liste = document.querySelector('#liste-demandes');
+  liste.replaceChildren();
+  (demandes.length ? demandes : [{ client: 'Aucune demande enregistrée.' }]).forEach((demande) => {
+    const element = document.createElement('li');
+    const score = demande.score_risque === null || demande.score_risque === undefined ? 'en attente' : `risque ${demande.niveau_risque.toLowerCase()} (${demande.score_risque}/100)`;
+    element.textContent = demande.identifiant ? `${demande.client} — ${formaterMontant(demande.montant_demande)}, ${score}` : demande.client;
+    liste.appendChild(element);
+  });
+}
+
+async function chargerListes() {
+  try {
+    const [clients, demandes] = await Promise.all([
+      appelJson('/api/clients/'),
+      appelJson('/api/demandes-credit/'),
+    ]);
+    afficherClients(clients.clients);
+    afficherDemandes(demandes.demandes);
+  } catch (erreur) {
+    document.querySelector('#liste-clients').textContent = `Impossible de charger les clients : ${erreur.message}`;
+  }
+}
+
+async function chargerInstitution() {
+  const contenu = await appelJson('/api/institution/');
+  const institution = contenu.institution;
+  document.querySelector('#institution-nom').value = institution.nom;
+  document.querySelector('#institution-sigle').value = institution.sigle;
+  document.querySelector('#institution-ville').value = institution.ville;
+  document.querySelector('#institution-pays').value = institution.pays;
+  document.querySelector('#nom-institution').textContent = institution.nom;
+  document.querySelector('#sigle-institution').textContent = `${institution.sigle} · Démonstration microcrédit`;
+}
+
+document.querySelector('#enregistrer-client').addEventListener('click', async () => {
+  try {
+    const contenu = await appelJson('/api/clients/creer/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(donneesClient()) });
+    identifiantClientSelectionne = contenu.client.identifiant;
+    document.querySelector('#message-chargement').textContent = `Client « ${contenu.client.nom_complet} » enregistré. Vous pouvez maintenant créer sa demande.`;
+    chargerListes();
+  } catch (erreur) {
+    alert(`Impossible d'enregistrer le client : ${erreur.message}`);
+  }
+});
+
+document.querySelector('#formulaire-institution').addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  try {
+    const contenu = await appelJson('/api/institution/enregistrer/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nom: document.querySelector('#institution-nom').value, sigle: document.querySelector('#institution-sigle').value, ville: document.querySelector('#institution-ville').value, pays: document.querySelector('#institution-pays').value }),
+    });
+    document.querySelector('#nom-institution').textContent = contenu.institution.nom;
+    document.querySelector('#sigle-institution').textContent = `${contenu.institution.sigle} · Démonstration microcrédit`;
+    document.querySelector('#message-institution').textContent = 'Configuration enregistrée.';
+  } catch (erreur) {
+    document.querySelector('#message-institution').textContent = `Enregistrement impossible : ${erreur.message}`;
+  }
+});
+document.querySelector('#actualiser-listes').addEventListener('click', chargerListes);
+
+document.querySelector('#recharger-cas').addEventListener('click', () => {
+  identifiantClientSelectionne = null;
+  chargerDossier(casFatou);
+});
 document.querySelector('#fichier-dossier').addEventListener('change', async (evenement) => {
   const fichier = evenement.target.files[0];
   const message = document.querySelector('#message-chargement');
@@ -138,4 +245,5 @@ champs
   .filter((champ) => document.querySelector(`#${champ}`).type === 'number')
   .forEach((champ) => document.querySelector(`#${champ}`).addEventListener('input', mettreAJourCalculs));
 chargerDossier(casFatou);
-
+chargerInstitution().catch((erreur) => { document.querySelector('#message-institution').textContent = `Configuration indisponible : ${erreur.message}`; });
+chargerListes();

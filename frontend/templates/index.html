@@ -9,8 +9,8 @@
   </head>
   <body>
     <header>
-      <p class="surtitre">CIF DigiCoop-WA+ · Démonstration</p>
-      <h1>Analyser un dossier de microcrédit</h1>
+      <p id="sigle-institution" class="surtitre">CIF DigiCoop-WA+ · Démonstration</p>
+      <h1 id="nom-institution">Analyser un dossier de microcrédit</h1>
       <p>Testez un dossier fictif, contrôlez les calculs et obtenez une explication lisible du niveau de risque. Le résultat reste une aide à la décision.</p>
     </header>
 
@@ -29,6 +29,29 @@
           <a href="https://github.com/bahdev223/cif-microcredit-scoring/blob/main/documentation/08-guide-technique-environnement.md" target="_blank" rel="noreferrer">Guide technique</a>
           <a href="https://github.com/bahdev223/cif-microcredit-scoring/blob/main/documentation/05-api.md" target="_blank" rel="noreferrer">Documentation API</a>
         </div>
+      </section>
+
+      <section class="carte" id="pilotage">
+        <div class="titre-section">
+          <div><p class="surtitre">Espace agent</p><h2>Piloter la démonstration</h2></div>
+          <button id="actualiser-listes" class="secondaire" type="button">Actualiser</button>
+        </div>
+        <div class="tableaux-agent">
+          <article><h3>Clients enregistrés</h3><ul id="liste-clients"><li>Chargement…</li></ul></article>
+          <article><h3>Demandes récentes</h3><ul id="liste-demandes"><li>Chargement…</li></ul></article>
+        </div>
+      </section>
+
+      <section class="carte" id="configuration">
+        <p class="surtitre">Configuration de l'institution</p>
+        <form id="formulaire-institution" class="grille-formulaire">
+          <label>Nom de l'institution<input id="institution-nom" required /></label>
+          <label>Sigle<input id="institution-sigle" maxlength="30" required /></label>
+          <label>Ville<input id="institution-ville" /></label>
+          <label>Pays<input id="institution-pays" value="Mali" required /></label>
+          <button type="submit">Enregistrer l'institution</button>
+        </form>
+        <p id="message-institution" class="aide"></p>
       </section>
 
       <section class="carte bandeau-cas">
@@ -94,7 +117,10 @@
           </div>
         </section>
 
-        <button class="bouton-principal" type="submit">Analyser ce dossier</button>
+        <div class="actions-formulaire">
+          <button id="enregistrer-client" class="secondaire" type="button">Enregistrer comme client</button>
+          <button class="bouton-principal" type="submit">Créer et analyser la demande</button>
+        </div>
       </form>
 
       <section id="resultat" class="resultats masque" aria-live="polite">
@@ -117,4 +143,3 @@
     <script src="{% static 'app.js' %}"></script>
   </body>
 </html>
-

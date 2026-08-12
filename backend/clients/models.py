@@ -1,6 +1,17 @@
 from django.db import models
 
 
+class Institution(models.Model):
+    nom = models.CharField(max_length=160, default="CIF Microfinance")
+    sigle = models.CharField(max_length=30, default="CIF")
+    ville = models.CharField(max_length=80, blank=True)
+    pays = models.CharField(max_length=80, default="Mali")
+    modifie_le = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.nom
+
+
 class Client(models.Model):
     nom_complet = models.CharField(max_length=160)
     secteur_activite = models.CharField(max_length=80)

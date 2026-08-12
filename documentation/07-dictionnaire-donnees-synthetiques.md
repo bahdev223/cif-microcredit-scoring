@@ -75,6 +75,30 @@ Un modèle entraîné sur `INS-001` et appliqué à `INS-002` doit se dégrader.
 
 Les paramètres qui produisent ces différences sont dans `simulation/configuration/institutions.yaml` : composition sectorielle, orientation produit, sévérité d'octroi, taux de défaut visé, qualité du système d'information, croissance du portefeuille. **Aucun n'est publié dans `brutes/`.**
 
+### Divergence mesurée
+
+`python simulation/comparer_mondes.py` compare les cinq mondes produits. Sur la génération complète à 10 000 clients par institution :
+
+| | INS-001 | INS-002 | INS-003 | INS-004 | INS-005 |
+| --- | --- | --- | --- | --- | --- |
+| Ancienneté médiane de relation | 31,5 mois | 31,6 | 26,4 | 31,3 | **21,3** |
+| Clients entrés depuis moins d'un an | 24,9 % | 23,8 % | 28,6 % | 24,9 % | **33,7 %** |
+| Secteur dominant | commerce 52 % | agriculture 44 % | artisanat 32 % | commerce 28 % | commerce 26 % |
+| Taux d'acceptation | 75,3 % | 70,7 % | **64,6 %** | 72,6 % | **84,8 %** |
+| Montant médian décaissé | 295 000 F | 230 000 F | **330 000 F** | 250 000 F | 250 000 F |
+| Durée médiane | 9 mois | 9 | **12** | 9 | 9 |
+| Taux de défaut observé | 8,8 % | 13,5 % | 10,8 % | 10,8 % | **19,6 %** |
+| Retard maximal moyen | 16,8 j | 22,5 j | 18,9 j | 19,2 j | **31,8 j** |
+| Cellules manquantes dans les relevés | **11,5 %** | 23,6 % | 16,1 % | 17,4 % | 20,6 % |
+| Amplitude saisonnière des recettes | 38,1 % | **63,5 %** | 39,4 % | 47,0 % | 42,9 % |
+| Effet du choc agricole 2023 | −1,2 % | **−22,1 %** | −2,7 % | −7,0 % | −4,5 % |
+
+L'écart est net sur les cinq dimensions qui comptent pour un modèle : composition de la population, politique d'octroi, niveau de risque, exposition au cycle et propreté des données. Le banc d'essai remplit son office.
+
+Une réserve : les taux de défaut atterrissent tous entre 1,5 et 1,8 point **au-dessus** de leur cible. La calibration s'arrête au premier point entrant dans la tolérance, et elle approche toujours par le haut. Le biais est systématique, donc corrigeable en cherchant le milieu de l'intervalle plutôt que sa première borne acceptable.
+
+Note de méthode : l'effet du choc se mesure contre les mêmes mois de 2022 et 2024, jamais contre le premier semestre de la même année. Le choc court de juin à décembre, soit exactement la fenêtre de la récolte : comparé au premier semestre, le pic saisonnier annule visuellement la chute et l'institution agricole semble n'avoir rien subi.
+
 ---
 
 ## 4. Horizon et volumétrie
@@ -109,20 +133,26 @@ Sortie de relation : risque mensuel de 0,5 %, triplé dans les six mois qui suiv
 
 ### Volumétrie attendue
 
-Ordres de grandeur pour les cinq institutions réunies, à confronter aux chiffres réels après la première génération complète :
+Volumes **mesurés** sur la génération complète des cinq institutions (graine 2026, 6 min 38 de calcul) :
 
-| Table | Lignes attendues | Poids indicatif |
+| Table | Lignes | Poids |
 | --- | --- | --- |
-| `06_clients` | 50 000 | 6 Mo |
-| `07_activites` | 120 000 – 150 000 | 16 Mo |
-| `08_situations_mensuelles` (vérité) | 2 200 000 – 2 600 000 | 180 Mo |
-| `09_demandes_credit` | 105 000 – 130 000 | 15 Mo |
-| `10_decisions_credit` | 105 000 – 130 000 | 11 Mo |
-| `11_credits` | 75 000 – 90 000 | 10 Mo |
-| `12_echeances` | 700 000 – 900 000 | 60 Mo |
-| `13_paiements` | 800 000 – 1 050 000 | 70 Mo |
+| `06_clients` | 50 000 | 2,9 Mo |
+| `07_activites` | 61 608 | 4,3 Mo |
+| `07b_releves_activite` | 155 467 | 14,3 Mo |
+| `08_situations_mensuelles` (vérité) | 1 673 932 | 125,0 Mo |
+| `08b_capacite_mensuelle` (vérité) | 1 367 841 | 72,8 Mo |
+| `09_demandes_credit` | 46 457 | 4,0 Mo |
+| `10_decisions_credit` | 46 457 | 2,8 Mo |
+| `11_credits` | 34 072 | 3,2 Mo |
+| `12_echeances` | 313 212 | 17,4 Mo |
+| `13_paiements` | 260 140 | 17,2 Mo |
+| `14_resultats_credit` | 34 072 | 1,8 Mo |
+| **Total, toutes tables** | **≈ 4,2 millions** | **283 Mo** |
 
-Ces volumes restent modestes pour un traitement par lots, mais plus pour un `pandas.read_csv` naïf répété à chaque cellule de cahier. **Décisions à acter avant la couche 08** : les tables de plus de 5 Mo sont écrites en Parquet en plus du CSV, elles sont partitionnées par institution, et le dépôt Git ne versionne que la configuration, le manifeste et un échantillon reproductible (`--echantillon`), le monde complet se régénérant à l'identique depuis la graine.
+Les demandes sont deux fois moins nombreuses que l'estimation initiale (46 000 au lieu de 105 000 à 130 000) : la contrainte d'un seul crédit actif à la fois, combinée à l'arrivée tardive de beaucoup de clients, limite mécaniquement les cycles. À corriger dans le moteur de demande si l'on veut des trajectoires plus longues, ou à assumer.
+
+**Décision à acter, maintenant urgente.** 283 Mo par génération, dont 198 Mo pour les deux seules tables mensuelles. Le monde étant reproductible octet pour octet depuis sa graine, le versionner n'apporte rien d'autre que du poids d'historique — et un dépôt qui grossit de 200 Mo à chaque régénération devient vite inutilisable. Proposition : ne versionner que la configuration, le manifeste et un échantillon (`--clients 200`), écrire les tables de plus de 5 Mo en Parquet partitionné par institution, et régénérer le monde complet à la demande.
 
 ---
 
