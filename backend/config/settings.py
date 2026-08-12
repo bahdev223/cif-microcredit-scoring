@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+RACINE_PROJET = BASE_DIR.parent
 SECRET_KEY = "development-only-change-before-production"
 DEBUG = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
@@ -29,7 +30,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = "config.urls"
 TEMPLATES = [{
     "BACKEND": "django.template.backends.django.DjangoTemplates",
-    "DIRS": [BASE_DIR],
+    "DIRS": [RACINE_PROJET / "frontend" / "templates"],
     "APP_DIRS": True,
     "OPTIONS": {"context_processors": [
         "django.template.context_processors.request",
@@ -38,12 +39,12 @@ TEMPLATES = [{
     ]},
 }]
 WSGI_APPLICATION = "config.wsgi.application"
-DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": os.environ.get("CIF_CHEMIN_BASE_DONNEES", BASE_DIR / "db.sqlite3")}}
+DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": os.environ.get("CIF_CHEMIN_BASE_DONNEES", RACINE_PROJET / "db.sqlite3")}}
 AUTH_PASSWORD_VALIDATORS = []
 LANGUAGE_CODE = "fr"
 TIME_ZONE = "Africa/Bamako"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR]
+STATICFILES_DIRS = [RACINE_PROJET / "frontend" / "static"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

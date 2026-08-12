@@ -1,0 +1,9 @@
+nom: "Kènèya Finance"
+est_fictive: true
+pays_de_demonstration: "Mali"
+agences:
+  - "Bamako Centre"
+  - "Sikasso"
+  - "Ségou"
+  - "Koulikoro"
+nombre_clients_initial: 500

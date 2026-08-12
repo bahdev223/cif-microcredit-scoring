@@ -10,8 +10,8 @@ Creer un environnement Python puis installer les dependances :
 python -m venv .venv
 .venv\\Scripts\\activate
 pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
+python backend/manage.py migrate
+python backend/manage.py runserver
 ```
 
 Ouvrir ensuite `http://127.0.0.1:8000/` pour le prototype, verifier `GET /api/etat/` ou appeler `POST /api/demandes-credit/analyser/`.
@@ -31,7 +31,7 @@ Ouvrir ensuite `http://127.0.0.1:8000/` pour le prototype, verifier `GET /api/et
 - [Guide de demonstration](docs/04-guide-demo.md)
 - [Contrat API](docs/05-api.md)
 - [Spécification du laboratoire synthétique](docs/06-laboratoire-synthetique.md)
-- [Données fictives chargeables et versionnées](donnees/README.md)
+- [Données fictives chargeables et versionnées](data/README.md)
 
 ## Limite importante
 

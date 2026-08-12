@@ -1,0 +1,13 @@
+produits:
+  - code: STOCK
+    nom: "Fonds de roulement"
+    montant_min: 50000
+    montant_max: 600000
+    duree_min_mois: 3
+    duree_max_mois: 12
+  - code: AGRI
+    nom: "Campagne agricole"
+    montant_min: 100000
+    montant_max: 800000
+    duree_min_mois: 6
+    duree_max_mois: 12

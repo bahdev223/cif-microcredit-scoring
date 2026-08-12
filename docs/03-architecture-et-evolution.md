@@ -3,12 +3,12 @@
 ## V0 Django
 
 ```text
-clients/             # profil economique du client
-credits/             # demande de credit et son resultat
-evaluation_risque/   # caracteristiques, regles, predicteur et explication
-audit/               # trace de chaque analyse
-api/                 # points d'acces REST
-config/              # configuration Django
+backend/              # Django : clients, credits, audit, api et evaluation_risque
+frontend/             # templates et fichiers statiques de la demonstration
+data/                 # donnees fictives, publiques et echantillons
+simulation/           # monde fictif et futurs generateurs
+notebooks/            # laboratoire Data Science
+models/               # registre des modeles entraines
 ```
 
 Le point d'acces `POST /api/demandes-credit/analyser/` persiste un client et une demande, calcule le score et enregistre l'analyse dans l'audit.

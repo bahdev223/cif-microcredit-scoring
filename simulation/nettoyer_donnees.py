@@ -1,6 +1,6 @@
 """Nettoie les dossiers fictifs sans modifier la source brute.
 
-Usage : python scripts/nettoyer_donnees.py
+Usage : python simulation/nettoyer_donnees.py
 """
 
 import json
@@ -8,8 +8,8 @@ from pathlib import Path
 
 
 RACINE = Path(__file__).resolve().parents[1]
-SOURCE = RACINE / "donnees" / "brutes" / "dossiers_demo.json"
-SORTIE = RACINE / "donnees" / "nettoyees" / "dossiers_demo_nettoyes.json"
+SOURCE = RACINE / "data" / "synthetic" / "raw" / "dossiers_demo.json"
+SORTIE = RACINE / "data" / "synthetic" / "processed" / "dossiers_demo_nettoyes.json"
 
 
 def entier_non_negatif(dossier, champ):
