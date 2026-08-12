@@ -30,6 +30,7 @@ Ouvrir ensuite `http://127.0.0.1:8000/` pour le prototype, verifier `GET /api/et
 - [Architecture et evolution](docs/03-architecture-et-evolution.md)
 - [Guide de demonstration](docs/04-guide-demo.md)
 - [Contrat API](docs/05-api.md)
+- [Spécification du laboratoire synthétique](docs/06-laboratoire-synthetique.md)
 
 ## Limite importante
 
