@@ -1,0 +1,211 @@
+# Couche 0, étape 1 : les cinq institutions fictives du laboratoire.
+#
+# Chaque institution définit un environnement complet dans lequel vivront ses
+# clients. Les cinq portefeuilles sont volontairement contrastés : c'est ce qui
+# permettra de tester si un même moteur de scoring s'adapte à des
+# environnements différents, ou s'il n'apprend que le monde qui l'a vu naître.
+#
+# Deux blocs par institution :
+#   observable  -> écrit dans donnees/synthetiques/brutes/01_institutions.csv
+#   latent      -> écrit dans donnees/synthetiques/verite/ et jamais donné au modèle
+#
+# Aucun de ces chiffres n'est une statistique du secteur de la microfinance
+# malienne. Ce sont des paramètres de laboratoire, choisis pour produire des
+# contrastes exploitables, et documentés comme tels.
+
+version_referentiel: "1.0.0"
+pays_de_demonstration: "Mali"
+
+institutions:
+
+  - code_profil_portefeuille: URBAIN_COMMERCE
+    libelle: "Institution 001 - commerce urbain"
+    zone_dominante: urbaine
+    specialisation_principale: COMMERCE
+    date_agrement: "2006-03-15"
+    # Portefeuille de ville : cycles courts, montants plus élevés, peu de
+    # saisonnalité, exposition faible aux chocs agricoles.
+    latent:
+      nombre_clients_cible: 10000
+      nombre_agences: 8
+      clients_par_agent_cible: 320
+      part_clients_stock_initial: 0.22
+      croissance_annuelle_portefeuille: 0.12
+      severite_octroi: 0.55
+      taux_acceptation_cible: 0.75
+      taux_defaut_experimental_cible: 0.07
+      multiplicateur_montant: 1.15
+      decalage_discipline: 0.05
+      decalage_volatilite: -0.02
+      sensibilite_macro: 0.80
+      facteur_qualite_donnees: 0.70
+      rotation_annuelle_agents: 0.06
+    mix_sectoriel:
+      COMMERCE: 0.52
+      SERVICES: 0.16
+      TRANSPORT: 0.10
+      ARTISANAT: 0.09
+      RESTAURATION: 0.08
+      PETITE_PRODUCTION: 0.03
+      AGRICULTURE: 0.02
+      ELEVAGE: 0.00
+    mix_produits:
+      FONDS_ROULEMENT: 0.40
+      CREDIT_COMMERCE: 0.35
+      MICROCREDIT_GENERAL: 0.15
+      CREDIT_EQUIPEMENT: 0.10
+      CREDIT_AGRICOLE: 0.00
+
+  - code_profil_portefeuille: RURAL_AGRICOLE
+    libelle: "Institution 002 - agriculture rurale"
+    zone_dominante: rurale
+    specialisation_principale: AGRICULTURE
+    date_agrement: "2003-11-02"
+    # Portefeuille de campagne : revenus saisonniers, remboursement après
+    # récolte, forte exposition aux chocs sectoriels, système d'information
+    # plus faible donc données plus sales.
+    latent:
+      nombre_clients_cible: 10000
+      nombre_agences: 11
+      clients_par_agent_cible: 260
+      part_clients_stock_initial: 0.18
+      croissance_annuelle_portefeuille: 0.07
+      severite_octroi: 0.60
+      taux_acceptation_cible: 0.70
+      taux_defaut_experimental_cible: 0.12
+      multiplicateur_montant: 0.85
+      decalage_discipline: 0.00
+      decalage_volatilite: 0.10
+      sensibilite_macro: 1.40
+      facteur_qualite_donnees: 1.60
+      rotation_annuelle_agents: 0.09
+    mix_sectoriel:
+      AGRICULTURE: 0.44
+      ELEVAGE: 0.19
+      COMMERCE: 0.14
+      ARTISANAT: 0.09
+      PETITE_PRODUCTION: 0.06
+      TRANSPORT: 0.04
+      SERVICES: 0.03
+      RESTAURATION: 0.01
+    mix_produits:
+      CREDIT_AGRICOLE: 0.55
+      MICROCREDIT_GENERAL: 0.20
+      FONDS_ROULEMENT: 0.13
+      CREDIT_COMMERCE: 0.07
+      CREDIT_EQUIPEMENT: 0.05
+
+  - code_profil_portefeuille: ENTREPRENEURIAL_TPE
+    libelle: "Institution 003 - artisans et TPE"
+    zone_dominante: mixte
+    specialisation_principale: ARTISANAT
+    date_agrement: "2011-06-20"
+    # Portefeuille d'investissement : durées longues, montants élevés,
+    # instruction plus exigeante donc taux d'acceptation plus bas.
+    latent:
+      nombre_clients_cible: 10000
+      nombre_agences: 6
+      clients_par_agent_cible: 240
+      part_clients_stock_initial: 0.12
+      croissance_annuelle_portefeuille: 0.15
+      severite_octroi: 0.70
+      taux_acceptation_cible: 0.64
+      taux_defaut_experimental_cible: 0.09
+      multiplicateur_montant: 1.30
+      decalage_discipline: 0.03
+      decalage_volatilite: 0.00
+      sensibilite_macro: 1.00
+      facteur_qualite_donnees: 0.90
+      rotation_annuelle_agents: 0.07
+    mix_sectoriel:
+      ARTISANAT: 0.33
+      PETITE_PRODUCTION: 0.21
+      SERVICES: 0.14
+      COMMERCE: 0.13
+      RESTAURATION: 0.09
+      TRANSPORT: 0.06
+      AGRICULTURE: 0.03
+      ELEVAGE: 0.01
+    mix_produits:
+      CREDIT_EQUIPEMENT: 0.42
+      FONDS_ROULEMENT: 0.25
+      MICROCREDIT_GENERAL: 0.15
+      CREDIT_COMMERCE: 0.13
+      CREDIT_AGRICOLE: 0.05
+
+  - code_profil_portefeuille: GENERALISTE
+    libelle: "Institution 004 - généraliste"
+    zone_dominante: mixte
+    specialisation_principale: DIVERSIFIE
+    date_agrement: "2008-01-30"
+    # Institution de référence : c'est sur elle que se calibre le monde, et
+    # c'est à elle qu'on compare les quatre autres.
+    latent:
+      nombre_clients_cible: 10000
+      nombre_agences: 9
+      clients_par_agent_cible: 300
+      part_clients_stock_initial: 0.20
+      croissance_annuelle_portefeuille: 0.10
+      severite_octroi: 0.55
+      taux_acceptation_cible: 0.72
+      taux_defaut_experimental_cible: 0.09
+      multiplicateur_montant: 1.00
+      decalage_discipline: 0.00
+      decalage_volatilite: 0.00
+      sensibilite_macro: 1.00
+      facteur_qualite_donnees: 1.00
+      rotation_annuelle_agents: 0.08
+    mix_sectoriel:
+      COMMERCE: 0.28
+      AGRICULTURE: 0.18
+      SERVICES: 0.13
+      ARTISANAT: 0.13
+      ELEVAGE: 0.08
+      TRANSPORT: 0.08
+      RESTAURATION: 0.07
+      PETITE_PRODUCTION: 0.05
+    mix_produits:
+      MICROCREDIT_GENERAL: 0.28
+      FONDS_ROULEMENT: 0.24
+      CREDIT_COMMERCE: 0.20
+      CREDIT_AGRICOLE: 0.16
+      CREDIT_EQUIPEMENT: 0.12
+
+  - code_profil_portefeuille: PORTEFEUILLE_COMPLEXE
+    libelle: "Institution 005 - portefeuille difficile"
+    zone_dominante: mixte
+    specialisation_principale: DIVERSIFIE
+    date_agrement: "2018-09-12"
+    # Institution jeune en croissance agressive : elle accepte beaucoup, sa
+    # clientèle est plus fragile et plus récente, son système d'information est
+    # médiocre. C'est le test de résistance du moteur de scoring.
+    latent:
+      nombre_clients_cible: 10000
+      nombre_agences: 7
+      clients_par_agent_cible: 380
+      part_clients_stock_initial: 0.06
+      croissance_annuelle_portefeuille: 0.28
+      severite_octroi: 0.35
+      taux_acceptation_cible: 0.86
+      taux_defaut_experimental_cible: 0.18
+      multiplicateur_montant: 1.05
+      decalage_discipline: -0.12
+      decalage_volatilite: 0.08
+      sensibilite_macro: 1.30
+      facteur_qualite_donnees: 1.80
+      rotation_annuelle_agents: 0.16
+    mix_sectoriel:
+      COMMERCE: 0.26
+      TRANSPORT: 0.16
+      RESTAURATION: 0.14
+      AGRICULTURE: 0.13
+      SERVICES: 0.12
+      ARTISANAT: 0.10
+      PETITE_PRODUCTION: 0.05
+      ELEVAGE: 0.04
+    mix_produits:
+      MICROCREDIT_GENERAL: 0.35
+      FONDS_ROULEMENT: 0.28
+      CREDIT_COMMERCE: 0.17
+      CREDIT_AGRICOLE: 0.12
+      CREDIT_EQUIPEMENT: 0.08

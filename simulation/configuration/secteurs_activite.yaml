@@ -1,5 +1,90 @@
+# Couche 0, étape 5 : le référentiel des secteurs d'activité.
+#
+# Nomenclature de laboratoire. Ce n'est ni la NAEMA ni aucune classification
+# officielle : si le projet doit un jour dialoguer avec des données réelles,
+# il faudra la remplacer et documenter la table de correspondance.
+#
+# observable  -> code, libelle, cycle
+# latent      -> tout le bloc parametres, qui pilote le moteur économique
+
 secteurs:
-  - Commerce
-  - Agriculture
-  - Artisanat
-  - Services
+
+  - code: COMMERCE
+    libelle: "Commerce de détail"
+    cycle: continu
+    parametres:
+      recettes_mensuelles_medianes: 250000
+      marge_structurelle: 0.12
+      amplitude_saisonniere: 0.20
+      mois_pic: 12
+      volatilite_base: 0.18
+
+  - code: AGRICULTURE
+    libelle: "Production agricole"
+    cycle: tres_saisonnier
+    parametres:
+      recettes_mensuelles_medianes: 180000
+      marge_structurelle: 0.22
+      amplitude_saisonniere: 0.55
+      mois_pic: 11
+      volatilite_base: 0.35
+
+  - code: ELEVAGE
+    libelle: "Élevage"
+    cycle: saisonnier
+    parametres:
+      recettes_mensuelles_medianes: 200000
+      marge_structurelle: 0.20
+      amplitude_saisonniere: 0.35
+      mois_pic: 10
+      volatilite_base: 0.28
+
+  - code: ARTISANAT
+    libelle: "Artisanat"
+    cycle: saisonnier
+    parametres:
+      recettes_mensuelles_medianes: 160000
+      marge_structurelle: 0.25
+      amplitude_saisonniere: 0.25
+      mois_pic: 12
+      volatilite_base: 0.22
+
+  - code: RESTAURATION
+    libelle: "Restauration et vente de repas"
+    cycle: continu
+    parametres:
+      recettes_mensuelles_medianes: 220000
+      marge_structurelle: 0.18
+      amplitude_saisonniere: 0.15
+      mois_pic: 12
+      volatilite_base: 0.20
+
+  - code: TRANSPORT
+    libelle: "Transport de personnes et de marchandises"
+    cycle: continu
+    parametres:
+      recettes_mensuelles_medianes: 280000
+      marge_structurelle: 0.15
+      amplitude_saisonniere: 0.18
+      mois_pic: 12
+      volatilite_base: 0.30
+
+  - code: SERVICES
+    libelle: "Services de proximité"
+    cycle: continu
+    parametres:
+      recettes_mensuelles_medianes: 210000
+      marge_structurelle: 0.30
+      amplitude_saisonniere: 0.15
+      mois_pic: 9
+      volatilite_base: 0.18
+
+  - code: PETITE_PRODUCTION
+    libelle: "Petite production et transformation"
+    cycle: saisonnier
+    parametres:
+      recettes_mensuelles_medianes: 150000
+      marge_structurelle: 0.24
+      amplitude_saisonniere: 0.22
+      mois_pic: 12
+      volatilite_base: 0.25

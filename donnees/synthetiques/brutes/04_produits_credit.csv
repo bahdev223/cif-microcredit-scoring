@@ -1,0 +1,6 @@
+identifiant_produit,code_produit,libelle_produit,montant_min,montant_max,duree_min_mois,duree_max_mois,periodicite,type_amortissement,differe_max_mois,secteurs_cibles,date_lancement
+PRO-001,MICROCREDIT_GENERAL,Microcrédit général,25000,250000,3,9,mensuelle,mensuel_constant,0,COMMERCE|AGRICULTURE|ELEVAGE|ARTISANAT|RESTAURATION|TRANSPORT|SERVICES|PETITE_PRODUCTION,2019-01-01
+PRO-002,FONDS_ROULEMENT,Fonds de roulement,50000,600000,3,12,mensuelle,mensuel_constant,0,COMMERCE|RESTAURATION|TRANSPORT|SERVICES|PETITE_PRODUCTION,2019-01-01
+PRO-003,CREDIT_COMMERCE,Crédit commerce,100000,900000,6,12,mensuelle,mensuel_constant,0,COMMERCE|RESTAURATION,2019-01-01
+PRO-004,CREDIT_AGRICOLE,Crédit de campagne agricole,100000,800000,6,12,mensuelle,differe_puis_mensuel,6,AGRICULTURE|ELEVAGE,2019-01-01
+PRO-005,CREDIT_EQUIPEMENT,Crédit équipement,150000,1500000,12,24,mensuelle,mensuel_constant,2,ARTISANAT|PETITE_PRODUCTION|TRANSPORT|SERVICES|COMMERCE,2022-07-01

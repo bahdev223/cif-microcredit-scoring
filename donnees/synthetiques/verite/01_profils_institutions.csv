@@ -1,0 +1,6 @@
+identifiant_institution,nombre_clients_cible,nombre_agences,clients_par_agent_cible,part_clients_stock_initial,croissance_annuelle_portefeuille,severite_octroi,taux_acceptation_cible,taux_defaut_experimental_cible,multiplicateur_montant,decalage_discipline,decalage_volatilite,sensibilite_macro,facteur_qualite_donnees,rotation_annuelle_agents
+INS-001,10000,8,320,0.2200,0.1200,0.5500,0.7500,0.0700,1.1500,0.0500,-0.0200,0.8000,0.7000,0.0600
+INS-002,10000,11,260,0.1800,0.0700,0.6000,0.7000,0.1200,0.8500,0.0000,0.1000,1.4000,1.6000,0.0900
+INS-003,10000,6,240,0.1200,0.1500,0.7000,0.6400,0.0900,1.3000,0.0300,0.0000,1.0000,0.9000,0.0700
+INS-004,10000,9,300,0.2000,0.1000,0.5500,0.7200,0.0900,1.0000,0.0000,0.0000,1.0000,1.0000,0.0800
+INS-005,10000,7,380,0.0600,0.2800,0.3500,0.8600,0.1800,1.0500,-0.1200,0.0800,1.3000,1.8000,0.1600

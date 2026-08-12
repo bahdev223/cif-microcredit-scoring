@@ -1,19 +1,73 @@
+# Couche 0, étape 4 : le référentiel des produits de crédit.
+#
+# Cinq produits communs aux cinq institutions, mais offerts avec des poids
+# différents selon l'orientation de chacune (voir institutions.yaml).
+#
+# Le taux d'intérêt n'est volontairement pas fixé : inventer une tarification
+# sans base métier reviendrait à publier une politique de prix que personne n'a
+# validée. Les échéanciers sont donc produits à taux nul et documentés comme
+# tels. Le champ sera ajouté quand un paramètre défendable et sourcé existera.
+
 produits:
-  - code: STOCK
-    nom: "Fonds de roulement"
+
+  - code: MICROCREDIT_GENERAL
+    libelle: "Microcrédit général"
+    montant_min: 25000
+    montant_max: 250000
+    duree_min_mois: 3
+    duree_max_mois: 9
+    periodicite: mensuelle
+    type_amortissement: mensuel_constant
+    differe_max_mois: 0
+    secteurs_cibles: [COMMERCE, AGRICULTURE, ELEVAGE, ARTISANAT, RESTAURATION, TRANSPORT, SERVICES, PETITE_PRODUCTION]
+    date_lancement: "2019-01-01"
+
+  - code: FONDS_ROULEMENT
+    libelle: "Fonds de roulement"
     montant_min: 50000
     montant_max: 600000
     duree_min_mois: 3
     duree_max_mois: 12
-  - code: AGRI
-    nom: "Campagne agricole"
+    periodicite: mensuelle
+    type_amortissement: mensuel_constant
+    differe_max_mois: 0
+    secteurs_cibles: [COMMERCE, RESTAURATION, TRANSPORT, SERVICES, PETITE_PRODUCTION]
+    date_lancement: "2019-01-01"
+
+  - code: CREDIT_COMMERCE
+    libelle: "Crédit commerce"
+    montant_min: 100000
+    montant_max: 900000
+    duree_min_mois: 6
+    duree_max_mois: 12
+    periodicite: mensuelle
+    type_amortissement: mensuel_constant
+    differe_max_mois: 0
+    secteurs_cibles: [COMMERCE, RESTAURATION]
+    date_lancement: "2019-01-01"
+
+  - code: CREDIT_AGRICOLE
+    libelle: "Crédit de campagne agricole"
     montant_min: 100000
     montant_max: 800000
     duree_min_mois: 6
     duree_max_mois: 12
-  - code: EQUIPEMENT
-    nom: "Petit équipement"
+    periodicite: mensuelle
+    type_amortissement: differe_puis_mensuel
+    differe_max_mois: 6
+    secteurs_cibles: [AGRICULTURE, ELEVAGE]
+    date_lancement: "2019-01-01"
+
+  # Produit lancé en cours de simulation : il crée une rupture temporelle
+  # volontaire, utile pour éprouver la détection de dérive.
+  - code: CREDIT_EQUIPEMENT
+    libelle: "Crédit équipement"
     montant_min: 150000
-    montant_max: 1000000
+    montant_max: 1500000
     duree_min_mois: 12
     duree_max_mois: 24
+    periodicite: mensuelle
+    type_amortissement: mensuel_constant
+    differe_max_mois: 2
+    secteurs_cibles: [ARTISANAT, PETITE_PRODUCTION, TRANSPORT, SERVICES, COMMERCE]
+    date_lancement: "2022-07-01"

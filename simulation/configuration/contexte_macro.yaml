@@ -1,0 +1,59 @@
+# Le temps macroéconomique du monde fictif.
+#
+# Ce fichier ne reproduit aucune économie réelle. Il fabrique des ruptures
+# datées, pour qu'on puisse observer ce qu'un modèle entraîné sur 2021-2023
+# devient en 2025.
+#
+# indice_activite : multiplie les recettes du secteur ce mois-là
+# indice_charges  : multiplie les charges du secteur ce mois-là
+#
+# Chaque institution encaisse ce contexte à travers sa sensibilite_macro :
+# le même choc mondial produit donc cinq histoires différentes.
+
+scenarios:
+
+  base:
+    libelle: "Environnement de référence"
+    periodes:
+
+      - libelle: "environnement normal"
+        debut: "2021-01"
+        fin: "2022-09"
+        secteurs: tous
+        indice_activite: 1.00
+        indice_charges: 1.00
+
+      - libelle: "légère hausse des charges"
+        debut: "2022-10"
+        fin: "2022-12"
+        secteurs: tous
+        indice_activite: 1.00
+        indice_charges: 1.06
+
+      - libelle: "retour à la normale"
+        debut: "2023-01"
+        fin: "2023-05"
+        secteurs: tous
+        indice_activite: 1.00
+        indice_charges: 1.02
+
+      - libelle: "choc synthétique sur l'agriculture"
+        debut: "2023-06"
+        fin: "2023-12"
+        secteurs: [AGRICULTURE, ELEVAGE]
+        indice_activite: 0.75
+        indice_charges: 1.12
+
+      - libelle: "reprise progressive"
+        debut: "2024-01"
+        fin: "2024-12"
+        secteurs: tous
+        indice_activite: 1.03
+        indice_charges: 1.02
+
+      - libelle: "hausse synthétique des charges"
+        debut: "2025-01"
+        fin: "2025-12"
+        secteurs: tous
+        indice_activite: 1.00
+        indice_charges: 1.25

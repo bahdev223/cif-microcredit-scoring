@@ -1,4 +1,11 @@
-date_debut: "2022-01-01"
-date_fin: "2026-08-01"
+# Paramètres d'horizon du monde synthétique.
+#
+# Aucun événement n'est généré avant date_debut ni après date_fin, paiements
+# compris. Un crédit décaissé tard n'a donc pas le temps d'arriver à terme :
+# il est marqué comme observation censurée, et exclu de l'entraînement.
+
+date_debut: "2021-01-01"
+date_fin: "2025-12-31"
 graine_aleatoire: 2026
+scenario: base
 note: "Paramètres fictifs destinés au laboratoire de démonstration."

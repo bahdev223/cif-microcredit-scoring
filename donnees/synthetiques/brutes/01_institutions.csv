@@ -1,0 +1,6 @@
+identifiant_institution,libelle_institution,code_profil_portefeuille,zone_dominante,specialisation_principale,date_agrement,pays_de_demonstration,est_fictive
+INS-001,Institution 001 - commerce urbain,URBAIN_COMMERCE,urbaine,COMMERCE,2006-03-15,Mali,1
+INS-002,Institution 002 - agriculture rurale,RURAL_AGRICOLE,rurale,AGRICULTURE,2003-11-02,Mali,1
+INS-003,Institution 003 - artisans et TPE,ENTREPRENEURIAL_TPE,mixte,ARTISANAT,2011-06-20,Mali,1
+INS-004,Institution 004 - généraliste,GENERALISTE,mixte,DIVERSIFIE,2008-01-30,Mali,1
+INS-005,Institution 005 - portefeuille difficile,PORTEFEUILLE_COMPLEXE,mixte,DIVERSIFIE,2018-09-12,Mali,1
