@@ -2,7 +2,7 @@ services:
   application:
     build:
       context: .
-      dockerfile: arriere_plan/Dockerfile
+      dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
     volumes:

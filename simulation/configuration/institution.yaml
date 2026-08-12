@@ -6,4 +6,4 @@ agences:
   - "Sikasso"
   - "Ségou"
   - "Koulikoro"
-nombre_clients_initial: 500
+nombre_clients: 500

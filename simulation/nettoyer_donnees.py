@@ -8,8 +8,8 @@ from pathlib import Path
 
 
 RACINE = Path(__file__).resolve().parents[1]
-SOURCE = RACINE / "donnees" / "synthetiques" / "brutes" / "dossiers_demo.json"
-SORTIE = RACINE / "donnees" / "synthetiques" / "nettoyees" / "dossiers_demo_nettoyes.json"
+SOURCE = RACINE / "donnees" / "echantillons" / "dossiers_demo.json"
+SORTIE = RACINE / "donnees" / "synthetiques" / "traitees" / "dossiers_demo_traites.json"
 
 
 def entier_non_negatif(dossier, champ):

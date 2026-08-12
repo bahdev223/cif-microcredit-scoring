@@ -3,11 +3,11 @@
 ## V0 Django
 
 ```text
-arriere_plan/         # Django : clients, credits, audit, api et evaluation_risque
-interface/            # templates et fichiers statiques de la demonstration
+backend/               # Django : clients, credits, audit, api et evaluation_risque
+frontend/              # templates et fichiers statiques de la demonstration
 donnees/              # donnees fictives, publiques et echantillons
 simulation/           # monde fictif et futurs generateurs
-cahiers/              # laboratoire Data Science
+laboratoires/         # laboratoire Data Science
 modeles/              # registre des modeles entraines
 ```
 
