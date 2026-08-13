@@ -48,6 +48,13 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [RACINE_PROJET / "frontend" / "static"]
+
+# Pièces jointes des dossiers clients. Le dossier est hors du dépôt : il
+# contiendrait, en usage réel, des documents personnels.
+MEDIA_URL = "documents/"
+MEDIA_ROOT = Path(os.environ.get("CIF_REPERTOIRE_DOCUMENTS", RACINE_PROJET.parent / "cif-microcredit-donnees-locales" / "documents"))
+TAILLE_MAXIMALE_DOCUMENT = 5 * 1024 * 1024
+EXTENSIONS_DOCUMENTS_AUTORISEES = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"}
 SPECTACULAR_SETTINGS = {"TITLE": "API CIF Microcrédit", "DESCRIPTION": "API de gestion du portefeuille et d'import CSV.", "VERSION": "1.0.0"}

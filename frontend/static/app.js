@@ -288,6 +288,71 @@ function afficherFicheClient(dossier) {
   afficherActivites(dossier.activites);
   afficherChronologie(dossier.chronologie);
   afficherCreditsFiche(dossier.historique_credit);
+  chargerDocuments(client.identifiant);
+}
+
+/* ---------- Documents du dossier ---------- */
+
+function formaterTaille(octets) {
+  return octets >= 1024 * 1024
+    ? (octets / (1024 * 1024)).toFixed(1) + " Mo"
+    : Math.max(1, Math.round(octets / 1024)) + " Ko";
+}
+
+async function chargerDocuments(identifiantClient) {
+  const donnees = await api(`/api/clients/${identifiantClient}/documents/`);
+
+  const attendues = $("#fiche-pieces-attendues");
+  attendues.replaceChildren();
+  donnees.categories.forEach(categorie => {
+    const ligne = creer("div", { className: "ligne-controle " + (categorie.present ? "present" : "absent") });
+    ligne.innerHTML = `<span class="marque-controle">${categorie.present ? "✓" : "—"}</span><span>${categorie.libelle}</span>`;
+    attendues.append(ligne);
+  });
+
+  const conteneur = $("#fiche-documents");
+  conteneur.replaceChildren();
+  if (!donnees.documents.length) {
+    conteneur.append(creer("p", { className: "sous-titre", textContent: "Aucun document joint à ce dossier." }));
+    return;
+  }
+
+  donnees.documents.forEach(document_ => {
+    const carte = creer("div", { className: "carte-secondaire ligne-attention" });
+    carte.insertAdjacentHTML("beforeend", `
+      <div class="identite">
+        <strong>${document_.libelle_categorie}</strong>
+        <span>${document_.nom_original} · ${formaterTaille(document_.taille_octets)} · ajouté le ${formaterDate(document_.televerse_le)}</span>
+      </div>`);
+    const actions = creer("span", { className: "actions-tableau" });
+    const consulter = creer("a", {
+      className: "bouton-secondaire", href: document_.url, target: "_blank", textContent: "Consulter",
+    });
+    const supprimer = boutonAction("supprimer", "Supprimer le document", ICONE_CORBEILLE);
+    supprimer.onclick = async () => {
+      if (!confirm(`Supprimer « ${document_.nom_original} » ?`)) return;
+      await api(`/api/documents/${document_.identifiant}/supprimer/`, { method: "DELETE" });
+      chargerDocuments(identifiantClient);
+    };
+    actions.append(consulter, supprimer);
+    carte.append(actions);
+    conteneur.append(carte);
+  });
+}
+
+async function envoyerDocument(fichier) {
+  if (!clientAffiche || !fichier) return;
+  const donnees = new FormData();
+  donnees.append("fichier", fichier);
+  donnees.append("categorie", $("#document-categorie").value);
+  $("#message-document").textContent = "Envoi en cours…";
+  try {
+    await api(`/api/clients/${clientAffiche.identifiant}/documents/televerser/`, { method: "POST", body: donnees });
+    $("#message-document").textContent = "";
+    chargerDocuments(clientAffiche.identifiant);
+  } catch (erreur) {
+    $("#message-document").textContent = erreur.message;
+  }
 }
 
 function ligneSynthese(libelle, valeur, classe = "") {
@@ -1331,6 +1396,12 @@ $("#confirmer-import").onclick = async () => {
   } catch (erreur) {
     $("#message-import").textContent = erreur.message;
   }
+};
+
+$("#televerser-document").onclick = () => $("#fichier-document").click();
+$("#fichier-document").onchange = evenement => {
+  envoyerDocument(evenement.target.files[0]);
+  evenement.target.value = "";
 };
 
 $("#nouveau-produit").onclick = () => ouvrirFormulaireProduit();

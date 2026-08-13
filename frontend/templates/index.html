@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Poste de travail — Gestion microcrédit</title>
-  <link rel="stylesheet" href="{% static 'styles.css' %}?v=6">
+  <link rel="stylesheet" href="{% static 'styles.css' %}?v=7">
 </head>
 <body>
 <div class="application">
@@ -221,6 +221,32 @@
           <h2 style="margin-bottom:14px">Parcours du client</h2>
           <div id="fiche-chronologie" class="chronologie"></div>
         </article>
+      </div>
+
+      <div class="panneau">
+        <div class="titre-panneau">
+          <div>
+            <p class="surtexte">Pièces du dossier</p>
+            <h2>Documents</h2>
+            <p class="sous-titre">Aucune lecture automatique du contenu n'est faite. PDF ou image, 5 Mo maximum.</p>
+          </div>
+          <div class="actions-liste">
+            <select id="document-categorie">
+              <option value="piece_identite">Pièce d'identité</option>
+              <option value="justificatif_activite">Justificatif d'activité</option>
+              <option value="photo">Photo</option>
+              <option value="autre">Autre document</option>
+            </select>
+            <button id="televerser-document" class="bouton-principal" type="button">Ajouter un document</button>
+            <input id="fichier-document" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" class="masque">
+          </div>
+        </div>
+        <div id="fiche-pieces-attendues" class="liste-repartition" style="margin-bottom:16px"></div>
+        <div id="fiche-documents" class="liste-fiche"></div>
+        <span id="message-document" class="message"></span>
+        <div class="question-metier" style="margin-top:16px">
+          <strong>Question à poser</strong>Quels documents demandez-vous réellement, et lesquels changent selon le produit de crédit ?
+        </div>
       </div>
 
       <div class="panneau">
@@ -783,6 +809,6 @@
   </div>
 </div>
 
-<script src="{% static 'app.js' %}?v=6"></script>
+<script src="{% static 'app.js' %}?v=7"></script>
 </body>
 </html>

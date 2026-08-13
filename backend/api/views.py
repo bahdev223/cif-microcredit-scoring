@@ -11,9 +11,11 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from django.conf import settings
+
 from audit.models import JournalAudit
 from clients.dossier import construire_dossier
-from clients.models import ActiviteImportee, Client, Institution
+from clients.models import ActiviteImportee, Client, DocumentDossier, Institution
 from credits.models import CreditImporte, DemandeCredit, DemandeImportee, EcheanceImportee, PaiementImporte, ProduitCredit
 from credits.rapprochement import date_observation_portefeuille, rapprocher_credit, tranche_retard
 from evaluation_risque.analyse_dossier import analyser_dossier
@@ -496,6 +498,82 @@ def enregistrer_institution(requete):
     except (KeyError, TypeError, ValueError) as erreur:
         return JsonResponse({"erreur": f"Données invalides : {erreur}"}, status=400)
     return JsonResponse({"institution": {"nom": institution.nom, "sigle": institution.sigle, "ville": institution.ville, "pays": institution.pays}})
+
+
+def serialiser_document(document):
+    return {
+        "identifiant": document.id,
+        "categorie": document.categorie,
+        "libelle_categorie": document.get_categorie_display(),
+        "nom_original": document.nom_original,
+        "taille_octets": document.taille_octets,
+        "url": document.fichier.url,
+        "televerse_le": document.televerse_le.isoformat(),
+    }
+
+
+@require_GET
+def liste_documents_client(requete, identifiant_client):
+    """Documents joints, et pièces attendues encore absentes."""
+    try:
+        client = Client.objects.get(pk=identifiant_client)
+    except Client.DoesNotExist:
+        return JsonResponse({"erreur": "Client introuvable."}, status=404)
+
+    documents = list(client.documents.order_by("-televerse_le"))
+    presentes = {document.categorie for document in documents}
+    return JsonResponse({
+        "documents": [serialiser_document(document) for document in documents],
+        "categories": [
+            {"code": code, "libelle": libelle, "present": code in presentes}
+            for code, libelle in DocumentDossier.CATEGORIES
+        ],
+    })
+
+
+@csrf_exempt
+@require_POST
+def televerser_document(requete, identifiant_client):
+    try:
+        client = Client.objects.get(pk=identifiant_client)
+    except Client.DoesNotExist:
+        return JsonResponse({"erreur": "Client introuvable."}, status=404)
+
+    fichier = requete.FILES.get("fichier")
+    categorie = requete.POST.get("categorie", "")
+    if not fichier:
+        return JsonResponse({"erreur": "Aucun fichier reçu."}, status=400)
+    if categorie not in {code for code, _ in DocumentDossier.CATEGORIES}:
+        return JsonResponse({"erreur": "Catégorie de document inconnue."}, status=400)
+
+    extension = Path(fichier.name).suffix.lower()
+    if extension not in settings.EXTENSIONS_DOCUMENTS_AUTORISEES:
+        autorisees = ", ".join(sorted(settings.EXTENSIONS_DOCUMENTS_AUTORISEES))
+        return JsonResponse({"erreur": f"Format non accepté. Formats autorisés : {autorisees}."}, status=400)
+    if fichier.size > settings.TAILLE_MAXIMALE_DOCUMENT:
+        limite = settings.TAILLE_MAXIMALE_DOCUMENT // (1024 * 1024)
+        return JsonResponse({"erreur": f"Fichier trop volumineux : {limite} Mo maximum."}, status=400)
+
+    document = DocumentDossier.objects.create(
+        client=client,
+        categorie=categorie,
+        fichier=fichier,
+        nom_original=fichier.name[:200],
+        taille_octets=fichier.size,
+    )
+    return JsonResponse({"document": serialiser_document(document)}, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def supprimer_document(requete, identifiant_document):
+    try:
+        document = DocumentDossier.objects.get(pk=identifiant_document)
+    except DocumentDossier.DoesNotExist:
+        return JsonResponse({"erreur": "Document introuvable."}, status=404)
+    document.fichier.delete(save=False)
+    document.delete()
+    return JsonResponse({"message": "Document supprimé."})
 
 
 @require_GET
