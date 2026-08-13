@@ -27,3 +27,12 @@ class Client(models.Model):
 
     def __str__(self):
         return self.nom_complet
+
+
+class ActiviteImportee(models.Model):
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="activites_importees")
+    identifiant_source = models.CharField(max_length=40, unique=True)
+    secteur = models.CharField(max_length=80)
+    libelle = models.CharField(max_length=160, blank=True)
+    est_principale = models.BooleanField(default=True)
+    date_debut = models.DateField(null=True, blank=True)

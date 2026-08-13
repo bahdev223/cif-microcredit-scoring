@@ -4,6 +4,10 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     ports:
-      - "8000:8000"
+      - "${CIF_PORT:-8000}:8000"
     volumes:
       - .:/app
+    environment:
+      CIF_DEBUG: ${CIF_DEBUG:-false}
+      CIF_SECRET_KEY: ${CIF_SECRET_KEY:-changez-cette-cle-en-production}
+      CIF_ALLOWED_HOSTS: ${CIF_ALLOWED_HOSTS:-localhost,127.0.0.1}

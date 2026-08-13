@@ -3,13 +3,15 @@ import csv
 from io import StringIO
 from pathlib import Path
 
+from django.core.paginator import Paginator
+from django.db.models import Sum
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from audit.models import JournalAudit
-from clients.models import Client, Institution
-from credits.models import CreditImporte, DemandeCredit, EcheanceImportee, PaiementImporte
+from clients.models import ActiviteImportee, Client, Institution
+from credits.models import CreditImporte, DemandeCredit, DemandeImportee, EcheanceImportee, PaiementImporte
 from evaluation_risque.explicabilite import expliquer_prediction
 from evaluation_risque.predicteur import predire_risque
 
@@ -34,6 +36,20 @@ def liste_lots_import(requete):
         if set(FICHIERS_IMPORT).issubset(fichiers):
             lots.append({"code": dossier.name, "libelle": dossier.name.replace("_", " ").title()})
     return JsonResponse({"lots": lots, "fichiers_attendus": sorted(FICHIERS_IMPORT)})
+
+
+@require_GET
+def tableau_bord(requete):
+    decaisse = CreditImporte.objects.aggregate(total=Sum("montant_decaisse"))["total"] or 0
+    rembourse = PaiementImporte.objects.aggregate(total=Sum("montant_paye"))["total"] or 0
+    return JsonResponse({
+        "clients": Client.objects.count(),
+        "demandes": DemandeCredit.objects.count() + DemandeImportee.objects.count(),
+        "credits": CreditImporte.objects.count(),
+        "montant_decaisse": decaisse,
+        "montant_rembourse": rembourse,
+        "encours": max(0, decaisse - rembourse),
+    })
 
 
 def lire_csv_importe(fichier):
@@ -157,7 +173,27 @@ def confirmer_import_csv(requete):
         clients_par_source[ligne["identifiant_client"]] = client
         ajoutes += int(cree)
 
+    for ligne in tables["activites.csv"]:
+        client = clients_par_source.get(ligne.get("identifiant_client"))
+        if client:
+            ActiviteImportee.objects.update_or_create(
+                identifiant_source=ligne["identifiant_activite"],
+                defaults={"client": client, "secteur": ligne.get("code_secteur", ""),
+                          "libelle": ligne.get("libelle_activite", ""),
+                          "est_principale": ligne.get("est_activite_principale") == "1",
+                          "date_debut": ligne.get("date_debut_activite") or None},
+            )
     demandes = {ligne["identifiant_demande"]: ligne for ligne in tables["demandes_credit.csv"]}
+    for ligne in demandes.values():
+        client = clients_par_source.get(ligne.get("identifiant_client"))
+        if client:
+            DemandeImportee.objects.update_or_create(
+                identifiant_source=ligne["identifiant_demande"],
+                defaults={"client": client, "montant": int(ligne.get("montant_demande") or 0),
+                          "duree_mois": int(ligne.get("duree_demandee_mois") or 0),
+                          "date_demande": ligne.get("date_demande") or None,
+                          "objet": ligne.get("objet_credit", "")},
+            )
     credits_par_source = {}
     for ligne in tables["credits.csv"]:
         demande = demandes.get(ligne.get("identifiant_demande"), {})
@@ -191,7 +227,9 @@ def confirmer_import_csv(requete):
                           "date_paiement": ligne.get("date_paiement") or None,
                           "montant_paye": int(ligne.get("montant_paye") or 0), "canal": ligne.get("canal_paiement", "")},
             )
-    return JsonResponse({"message": "Import confirmé.", "clients_ajoutes": ajoutes, "credits_importes": len(credits_par_source), "qualite": qualite, "avertissements": avertissements, "total_lignes": total})
+    return JsonResponse({"message": "Import confirmé.", "clients_ajoutes": ajoutes, "credits_importes": len(credits_par_source),
+                         "demandes_importees": len(demandes), "activites_importees": len(tables["activites.csv"]),
+                         "qualite": qualite, "avertissements": avertissements, "total_lignes": total})
 
 
 @require_GET
@@ -201,7 +239,10 @@ def detail_client(requete, identifiant_client):
     except Client.DoesNotExist:
         return JsonResponse({"erreur": "Client introuvable."}, status=404)
     credits = client.credits_importes.prefetch_related("echeances", "paiements").all()
-    return JsonResponse({"client": serialiser_client(client), "credits": [{
+    return JsonResponse({"client": serialiser_client(client),
+                         "activites": [{"libelle": a.libelle, "secteur": a.secteur} for a in client.activites_importees.all()],
+                         "demandes": [{"montant": d.montant, "duree_mois": d.duree_mois, "objet": d.objet} for d in client.demandes_importees.all()],
+                         "credits": [{
         "identifiant": credit.identifiant_source, "montant": credit.montant_decaisse,
         "duree_mois": credit.duree_mois, "date_decaissement": credit.date_decaissement.isoformat() if credit.date_decaissement else "",
         "echeances": [{"numero": e.numero, "date": e.date_exigible.isoformat() if e.date_exigible else "", "montant": e.montant_du} for e in credit.echeances.all()],
@@ -239,7 +280,34 @@ def serialiser_client(client):
 @csrf_exempt
 @require_GET
 def liste_clients(requete):
-    return JsonResponse({"clients": [serialiser_client(client) for client in Client.objects.order_by("-cree_le")[:100]]})
+    recherche = requete.GET.get("recherche", "").strip()
+    clients = Client.objects.order_by("-cree_le")
+    if recherche:
+        clients = clients.filter(nom_complet__icontains=recherche)
+    page = Paginator(clients, int(requete.GET.get("taille", 20))).get_page(requete.GET.get("page", 1))
+    return JsonResponse({"resultats": [serialiser_client(client) for client in page],
+                         "pagination": {"page": page.number, "pages": page.paginator.num_pages, "total": page.paginator.count}})
+
+
+@require_GET
+def liste_credits(requete):
+    page = Paginator(CreditImporte.objects.select_related("client").order_by("-date_decaissement"), int(requete.GET.get("taille", 20))).get_page(requete.GET.get("page", 1))
+    return JsonResponse({"resultats": [{"identifiant": c.identifiant_source, "client": c.client.nom_complet, "montant": c.montant_decaisse, "duree_mois": c.duree_mois} for c in page],
+                         "pagination": {"page": page.number, "pages": page.paginator.num_pages, "total": page.paginator.count}})
+
+
+@require_GET
+def liste_remboursements(requete):
+    page = Paginator(PaiementImporte.objects.select_related("credit__client").order_by("-date_paiement"), int(requete.GET.get("taille", 20))).get_page(requete.GET.get("page", 1))
+    return JsonResponse({"resultats": [{"identifiant": p.identifiant_source, "client": p.credit.client.nom_complet, "montant": p.montant_paye, "date": p.date_paiement.isoformat() if p.date_paiement else ""} for p in page],
+                         "pagination": {"page": page.number, "pages": page.paginator.num_pages, "total": page.paginator.count}})
+
+
+@require_GET
+def liste_audit(requete):
+    page = Paginator(JournalAudit.objects.select_related("demande_credit__client").order_by("-cree_le"), int(requete.GET.get("taille", 20))).get_page(requete.GET.get("page", 1))
+    return JsonResponse({"resultats": [{"evenement": j.type_evenement, "client": j.demande_credit.client.nom_complet, "date": j.cree_le.isoformat()} for j in page],
+                         "pagination": {"page": page.number, "pages": page.paginator.num_pages, "total": page.paginator.count}})
 
 
 @csrf_exempt

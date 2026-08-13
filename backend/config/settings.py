@@ -3,9 +3,9 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 RACINE_PROJET = BASE_DIR.parent
-SECRET_KEY = "development-only-change-before-production"
-DEBUG = True
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
+SECRET_KEY = os.environ.get("CIF_SECRET_KEY", "development-only-change-before-production")
+DEBUG = os.environ.get("CIF_DEBUG", "true").lower() == "true"
+ALLOWED_HOSTS = os.environ.get("CIF_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "drf_spectacular",
     "clients",
     "credits",
     "audit",
@@ -48,3 +49,5 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [RACINE_PROJET / "frontend" / "static"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+REST_FRAMEWORK = {"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"}
+SPECTACULAR_SETTINGS = {"TITLE": "API CIF Microcrédit", "DESCRIPTION": "API de gestion du portefeuille et d'import CSV.", "VERSION": "1.0.0"}

@@ -1,4 +1,5 @@
 Django==5.2.11
+drf-spectacular==0.28.0
 PyYAML==6.0.3
 pandas==2.3.3
 scikit-learn==1.8.0

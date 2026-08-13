@@ -41,3 +41,12 @@ class PaiementImporte(models.Model):
     date_paiement = models.DateField(null=True, blank=True)
     montant_paye = models.PositiveIntegerField(default=0)
     canal = models.CharField(max_length=40, blank=True)
+
+
+class DemandeImportee(models.Model):
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="demandes_importees")
+    identifiant_source = models.CharField(max_length=40, unique=True)
+    montant = models.PositiveIntegerField(default=0)
+    duree_mois = models.PositiveSmallIntegerField(default=0)
+    date_demande = models.DateField(null=True, blank=True)
+    objet = models.CharField(max_length=120, blank=True)
