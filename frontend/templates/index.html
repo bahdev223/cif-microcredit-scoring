@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Poste de travail — Gestion microcrédit</title>
-  <link rel="stylesheet" href="{% static 'styles.css' %}?v=3">
+  <link rel="stylesheet" href="{% static 'styles.css' %}?v=4">
 </head>
 <body>
 <div class="application">
@@ -140,9 +140,9 @@
           <input id="recherche-demandes" placeholder="Rechercher un client">
           <select id="filtre-risque">
             <option value="">Tous les niveaux</option>
-            <option value="FAIBLE">Risque faible</option>
-            <option value="MOYEN">Risque moyen</option>
-            <option value="ELEVE">Risque élevé</option>
+            <option value="FAIBLE">Faible</option>
+            <option value="MODERE">Modéré</option>
+            <option value="ELEVE">Élevé</option>
           </select>
         </div>
         <div class="tableau-wrap">
@@ -227,6 +227,222 @@
         <p class="surtexte">Historique crédit</p>
         <h2 style="margin-bottom:14px">Crédits, échéances et paiements</h2>
         <div id="fiche-credits" class="credits-fiche"></div>
+      </div>
+    </section>
+
+    <!-- ---------- Nouvelle demande : constitution du dossier ---------- -->
+    <section id="nouvelle-demande-vue" class="vue vue-masque">
+      <div class="retour-page"><button class="bouton-secondaire ouvrir-vue" data-vue="demandes" type="button">← Abandonner le dossier</button></div>
+
+      <div class="panneau">
+        <ol class="etapes" id="etapes-demande">
+          <li data-etape="1">Client</li>
+          <li data-etape="2">Besoin</li>
+          <li data-etape="3">Activité</li>
+          <li data-etape="4">Situation financière</li>
+          <li data-etape="5">Engagements</li>
+          <li data-etape="6">Historique</li>
+          <li data-etape="7">Vérification</li>
+        </ol>
+      </div>
+
+      <div class="panneau">
+        <div id="etape-1" class="etape-contenu">
+          <p class="surtexte">Étape 1</p>
+          <h2 style="margin-bottom:14px">Client</h2>
+          <label class="pleine-largeur">Client existant
+            <select id="demande-client"><option value="">Sélectionnez un client</option></select>
+          </label>
+          <p class="sous-titre" style="margin-top:10px">Le client n'est pas encore enregistré ? Créez-le depuis l'écran Clients, puis revenez ici.</p>
+        </div>
+
+        <div id="etape-2" class="etape-contenu masque">
+          <p class="surtexte">Étape 2</p>
+          <h2 style="margin-bottom:14px">Besoin de financement</h2>
+          <div class="formulaire-configuration">
+            <label>Montant demandé (FCFA)<input id="demande-montant" type="number" min="1" required></label>
+            <label>Durée souhaitée (mois)<input id="demande-duree" type="number" min="1" value="12" required></label>
+            <label class="pleine-largeur">Objet du financement<input id="demande-objet" placeholder="Achat de stock, intrants, équipement…"></label>
+            <label class="pleine-largeur">Produit de crédit
+              <select id="demande-produit"><option value="">Aucun produit configuré</option></select>
+            </label>
+          </div>
+          <div id="note-produits" class="question-metier" style="margin-top:16px">
+            <strong>Question à poser</strong>Aucun produit n'est prédéfini dans l'application : chaque institution saisit les siens. Qu'est-ce qui différencie réellement vos produits ?
+          </div>
+        </div>
+
+        <div id="etape-3" class="etape-contenu masque">
+          <p class="surtexte">Étape 3</p>
+          <h2 style="margin-bottom:14px">Activité économique</h2>
+          <div class="formulaire-configuration">
+            <label>Ancienneté de l'activité (mois)<input id="demande-anciennete" type="number" min="0" value="0"></label>
+            <label>Saisonnalité
+              <select id="demande-saisonnalite">
+                <option value="">Non renseignée</option>
+                <option value="stable">Activité stable toute l'année</option>
+                <option value="saisonniere">Activité saisonnière marquée</option>
+                <option value="irreguliere">Revenus irréguliers</option>
+              </select>
+            </label>
+            <label>Recettes mensuelles (FCFA)<input id="demande-recettes" type="number" min="0" value="0"></label>
+            <label>Charges de l'activité (FCFA)<input id="demande-charges-activite" type="number" min="0" value="0"></label>
+          </div>
+          <div class="question-metier" style="margin-top:16px">
+            <strong>Question à poser</strong>Comment vérifiez-vous réellement ces recettes ?
+          </div>
+        </div>
+
+        <div id="etape-4" class="etape-contenu masque">
+          <p class="surtexte">Étape 4</p>
+          <h2 style="margin-bottom:14px">Situation financière du ménage</h2>
+          <div class="formulaire-configuration">
+            <label>Autres revenus du ménage (FCFA)<input id="demande-autres-revenus" type="number" min="0" value="0"></label>
+            <label>Charges du ménage (FCFA)<input id="demande-charges-menage" type="number" min="0" value="0"></label>
+          </div>
+          <div class="question-metier" style="margin-top:16px">
+            <strong>Question à poser</strong>Comment calculez-vous la capacité de remboursement ?
+          </div>
+        </div>
+
+        <div id="etape-5" class="etape-contenu masque">
+          <p class="surtexte">Étape 5</p>
+          <h2 style="margin-bottom:14px">Engagements existants</h2>
+          <div class="formulaire-configuration">
+            <label class="pleine-largeur">Mensualités déjà en cours (FCFA)<input id="demande-dette" type="number" min="0" value="0"></label>
+          </div>
+          <p class="sous-titre" style="margin-top:10px">Crédits en cours dans l'institution, ailleurs, ou engagements connus.</p>
+          <div class="question-metier" style="margin-top:16px">
+            <strong>Question à poser</strong>Comment savez-vous qu'un client est déjà endetté ailleurs ?
+          </div>
+        </div>
+
+        <div id="etape-6" class="etape-contenu masque">
+          <p class="surtexte">Étape 6</p>
+          <h2 style="margin-bottom:14px">Historique dans l'institution</h2>
+          <div id="demande-historique"></div>
+          <p class="sous-titre" style="margin-top:12px">Repris automatiquement des crédits déjà enregistrés pour ce client.</p>
+          <div class="question-metier" style="margin-top:16px">
+            <strong>Question à poser</strong>Quels retards considérez-vous comme importants ?
+          </div>
+        </div>
+
+        <div id="etape-7" class="etape-contenu masque">
+          <p class="surtexte">Étape 7</p>
+          <h2 style="margin-bottom:14px">Vérification avant enregistrement</h2>
+          <div id="demande-verification"></div>
+        </div>
+
+        <div class="actions" style="justify-content:space-between;margin-top:22px">
+          <button id="etape-precedente" class="bouton-secondaire" type="button">Précédent</button>
+          <span id="message-demande" class="message"></span>
+          <span>
+            <button id="etape-suivante" class="bouton-principal" type="button">Suivant</button>
+            <button id="enregistrer-dossier" class="bouton-principal masque" type="button">Enregistrer le dossier</button>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Instruction du dossier ---------- -->
+    <section id="instruction" class="vue vue-masque">
+      <div class="retour-page"><button class="bouton-secondaire ouvrir-vue" data-vue="demandes" type="button">← Retour aux demandes</button></div>
+
+      <div class="panneau en-tete-fiche">
+        <div>
+          <p class="surtexte" id="instruction-reference">Demande</p>
+          <h2 id="instruction-client">—</h2>
+          <p id="instruction-resume" class="sous-titre"></p>
+        </div>
+        <div class="actions-fiche">
+          <span id="instruction-decision" class="badge-decision">EN_ATTENTE</span>
+          <button id="instruction-voir-client" class="bouton-secondaire" type="button">Voir le dossier client</button>
+        </div>
+      </div>
+
+      <div class="grille-fiche">
+        <article class="panneau">
+          <p class="surtexte">Dossier</p>
+          <h2 style="margin-bottom:12px">Informations recueillies</h2>
+          <div id="instruction-dossier"></div>
+        </article>
+
+        <div>
+          <article class="panneau">
+            <p class="surtexte">Analyse préliminaire</p>
+            <h2 style="margin-bottom:12px">Capacité financière</h2>
+            <div id="instruction-capacite"></div>
+          </article>
+          <article class="panneau">
+            <p class="surtexte">Analyse préliminaire</p>
+            <h2 style="margin-bottom:12px">Historique de remboursement</h2>
+            <div id="instruction-historique"></div>
+          </article>
+          <article class="panneau">
+            <p class="surtexte">Analyse préliminaire</p>
+            <h2 style="margin-bottom:12px">Qualité du dossier</h2>
+            <div id="instruction-qualite"></div>
+          </article>
+        </div>
+      </div>
+
+      <article class="panneau">
+        <div class="titre-panneau">
+          <div>
+            <p class="surtexte">Simulation</p>
+            <h2>Ajuster le montant et la durée</h2>
+            <p class="sous-titre">La demande n'est modifiée que si vous appliquez la simulation.</p>
+          </div>
+          <button id="appliquer-simulation" class="bouton-secondaire" type="button">Appliquer au dossier</button>
+        </div>
+        <div class="grille-simulation">
+          <div>
+            <label>Montant <span id="simulation-montant-valeur" class="nombre"></span>
+              <input id="simulation-montant" type="range" min="25000" max="2000000" step="25000">
+            </label>
+            <label style="margin-top:14px">Durée
+              <select id="simulation-duree">
+                <option value="3">3 mois</option><option value="6">6 mois</option><option value="9">9 mois</option>
+                <option value="12">12 mois</option><option value="18">18 mois</option><option value="24">24 mois</option>
+              </select>
+            </label>
+          </div>
+          <div id="tableau-simulation"></div>
+        </div>
+      </article>
+
+      <div class="grille-fiche">
+        <article class="panneau">
+          <p class="surtexte">Décision</p>
+          <h2 style="margin-bottom:12px">Observations de l'agent</h2>
+          <textarea id="instruction-observations" rows="5" placeholder="Ce que vous avez constaté, vérifié, ce qui reste à confirmer…"></textarea>
+
+          <div class="choix-decision" style="margin-top:16px">
+            <label class="option-decision"><input type="radio" name="decision" value="A_REVOIR"> À revoir</label>
+            <label class="option-decision"><input type="radio" name="decision" value="FAVORABLE"> Favorable</label>
+            <label class="option-decision"><input type="radio" name="decision" value="DEFAVORABLE"> Défavorable</label>
+          </div>
+
+          <label style="margin-top:14px">Motif ou commentaire<input id="instruction-motif" placeholder="Motif de la décision"></label>
+          <div class="actions" style="justify-content:flex-start;margin-top:16px">
+            <button id="enregistrer-decision" class="bouton-principal" type="button">Enregistrer la décision</button>
+            <span id="message-decision" class="message"></span>
+          </div>
+          <p class="sous-titre" style="margin-top:12px">L'application ne présélectionne aucune décision.</p>
+        </article>
+
+        <div>
+          <article class="panneau">
+            <p class="surtexte">Indicateurs expérimentaux</p>
+            <h2 style="margin-bottom:12px">Règles pédagogiques</h2>
+            <div id="instruction-experimental"></div>
+          </article>
+          <article class="panneau">
+            <p class="surtexte">Traçabilité</p>
+            <h2 style="margin-bottom:12px">Journal de la demande</h2>
+            <div id="instruction-journal"></div>
+          </article>
+        </div>
       </div>
     </section>
 
@@ -394,29 +610,6 @@
   </div>
 </div>
 
-<div id="dialogue-demande" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-demande">
-  <div class="fenetre-dialogue">
-    <div class="entete-dialogue">
-      <div>
-        <p class="surtexte">Instruction</p>
-        <h2 id="titre-dialogue-demande">Nouvelle demande de crédit</h2>
-        <p class="sous-titre">L'analyse préliminaire est produite à l'enregistrement.</p>
-      </div>
-      <button class="fermer-dialogue" data-fermer="dialogue-demande" aria-label="Fermer">×</button>
-    </div>
-    <form id="formulaire-demande" class="formulaire-configuration">
-      <label class="pleine-largeur">Client<select id="demande-client" required><option value="">Sélectionnez un client</option></select></label>
-      <label>Montant demandé (FCFA)<input id="demande-montant" type="number" min="1" required></label>
-      <label>Durée (mois)<input id="demande-duree" type="number" min="1" value="12" required></label>
-      <div class="actions">
-        <span id="message-demande" class="message"></span>
-        <button class="bouton-secondaire" type="button" data-fermer="dialogue-demande">Annuler</button>
-        <button class="bouton-principal" type="submit">Enregistrer la demande</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<script src="{% static 'app.js' %}?v=3"></script>
+<script src="{% static 'app.js' %}?v=4"></script>
 </body>
 </html>

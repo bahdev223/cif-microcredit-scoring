@@ -17,6 +17,8 @@ const TITRES = {
   "tableau-bord": ["Tableau de bord", "Suivez votre portefeuille de crédit."],
   portefeuille: ["Portefeuille", "Vue d'ensemble du portefeuille par agence, produit et secteur."],
   demandes: ["Demandes de crédit", "Instruisez les demandes et suivez les décisions."],
+  "nouvelle-demande-vue": ["Nouvelle demande de crédit", "Constitution du dossier, étape par étape."],
+  instruction: ["Instruction du dossier", "Analyse préliminaire, simulation et décision de l'agent."],
   clients: ["Clients", "Créez, recherchez et consultez les dossiers clients."],
   "fiche-client": ["Dossier client", "Situation, historique et parcours du client."],
   credits: ["Crédits", "Crédits décaissés et suivis par l'institution."],
@@ -112,6 +114,7 @@ function boutonAction(classe, libelle, icone) {
 const ICONE_OEIL = '<svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>';
 const ICONE_CRAYON = '<svg viewBox="0 0 24 24"><path d="m4 16.5-.8 4.3 4.3-.8L19 8.5 15.5 5 4 16.5Z"/><path d="m13.8 6.7 3.5 3.5"/></svg>';
 const ICONE_CORBEILLE = '<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5"/></svg>';
+const ICONE_DOSSIER = '<svg viewBox="0 0 24 24"><path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h4l2 2.5h7A1.5 1.5 0 0 1 20 9v8.5A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5Z"/><path d="M8.5 12.5h7M8.5 15.5h4"/></svg>';
 
 /* ---------- Navigation ---------- */
 
@@ -476,24 +479,349 @@ async function chargerDemandes() {
       <td><span class="badge-decision">${demande.decision_agent || "EN_ATTENTE"}</span></td>
     `);
     const actions = creer("td", { className: "actions-tableau" });
-    const action = boutonAction("details", "Ouvrir le dossier client", ICONE_OEIL);
-    action.onclick = () => ouvrirFicheClient(demande.identifiant_client);
-    actions.append(action);
+    const instruire = boutonAction("details", "Instruire la demande", ICONE_DOSSIER);
+    const voirClient = boutonAction("details", "Ouvrir le dossier client", ICONE_OEIL);
+    instruire.onclick = () => ouvrirInstruction(demande.identifiant);
+    voirClient.onclick = () => ouvrirFicheClient(demande.identifiant_client);
+    actions.append(instruire, voirClient);
     ligne.append(actions);
     corps.append(ligne);
   });
 }
 
-async function ouvrirDialogueDemande(identifiantClient = "") {
-  const reponse = await api("/api/clients/?taille=200");
-  const select = $("#demande-client");
-  select.replaceChildren(
+/* ---------- Constitution du dossier en sept étapes ---------- */
+
+const NOMBRE_ETAPES = 7;
+let etapeCourante = 1;
+
+async function ouvrirNouvelleDemande(identifiantClient = "") {
+  const [clients, produits] = await Promise.all([
+    api("/api/clients/?taille=200"),
+    api("/api/produits-credit/"),
+  ]);
+
+  $("#demande-client").replaceChildren(
     new Option("Sélectionnez un client", ""),
-    ...reponse.resultats.map(client => new Option(client.nom_complet, client.identifiant)),
+    ...clients.resultats.map(client => new Option(client.nom_complet, client.identifiant)),
   );
-  if (identifiantClient) select.value = identifiantClient;
+  if (identifiantClient) $("#demande-client").value = identifiantClient;
+
+  const selectProduit = $("#demande-produit");
+  selectProduit.replaceChildren(
+    new Option(produits.produits.length ? "Sélectionnez un produit" : "Aucun produit configuré", ""),
+    ...produits.produits.map(produit => new Option(produit.libelle, produit.identifiant)),
+  );
+  $("#note-produits").classList.toggle("masque", produits.produits.length > 0);
+
+  ["#demande-montant", "#demande-objet", "#demande-recettes", "#demande-charges-activite",
+   "#demande-autres-revenus", "#demande-charges-menage", "#demande-dette"].forEach(selecteur => {
+    $(selecteur).value = selecteur === "#demande-objet" ? "" : 0;
+  });
+  $("#demande-montant").value = "";
+  $("#demande-duree").value = 12;
   $("#message-demande").textContent = "";
-  ouvrirDialogue("dialogue-demande");
+
+  etapeCourante = 1;
+  ouvrir("nouvelle-demande-vue");
+  afficherEtape();
+  if (identifiantClient) preremplirDepuisClient(identifiantClient);
+}
+
+async function preremplirDepuisClient(identifiant) {
+  /* Reprise de ce que l'institution sait déjà : l'agent corrige au lieu de
+     ressaisir. Les zéros ne sont pas recopiés, pour ne pas faire passer une
+     information absente pour une information relevée. */
+  const dossier = await api(`/api/clients/${identifiant}/`);
+  const client = dossier.client;
+  if (client.anciennete_activite_mois) $("#demande-anciennete").value = client.anciennete_activite_mois;
+  if (client.revenu_mensuel) $("#demande-recettes").value = client.revenu_mensuel;
+  if (client.charges_mensuelles) $("#demande-charges-activite").value = client.charges_mensuelles;
+  if (client.mensualite_dette_existante) $("#demande-dette").value = client.mensualite_dette_existante;
+  afficherHistoriqueEtape(dossier);
+}
+
+function afficherEtape() {
+  for (let numero = 1; numero <= NOMBRE_ETAPES; numero += 1) {
+    $("#etape-" + numero).classList.toggle("masque", numero !== etapeCourante);
+  }
+  $$("#etapes-demande li").forEach(element => {
+    const numero = +element.dataset.etape;
+    element.classList.toggle("active", numero === etapeCourante);
+    element.classList.toggle("faite", numero < etapeCourante);
+  });
+  $("#etape-precedente").disabled = etapeCourante === 1;
+  $("#etape-suivante").classList.toggle("masque", etapeCourante === NOMBRE_ETAPES);
+  $("#enregistrer-dossier").classList.toggle("masque", etapeCourante !== NOMBRE_ETAPES);
+}
+
+function validerEtape() {
+  $("#message-demande").textContent = "";
+  if (etapeCourante === 1 && !$("#demande-client").value) {
+    $("#message-demande").textContent = "Sélectionnez un client pour continuer.";
+    return false;
+  }
+  if (etapeCourante === 2 && !(+$("#demande-montant").value > 0)) {
+    $("#message-demande").textContent = "Indiquez le montant demandé.";
+    return false;
+  }
+  return true;
+}
+
+async function etapeSuivante() {
+  if (!validerEtape()) return;
+  if (etapeCourante === 1) await preremplirDepuisClient($("#demande-client").value);
+  etapeCourante = Math.min(NOMBRE_ETAPES, etapeCourante + 1);
+  if (etapeCourante === NOMBRE_ETAPES) afficherVerification();
+  afficherEtape();
+}
+
+function afficherHistoriqueEtape(dossier) {
+  const conteneur = $("#demande-historique");
+  const synthese = dossier.synthese;
+  if (!synthese.nombre_credits) {
+    conteneur.innerHTML = `<div class="avertissement">Aucun crédit antérieur dans l'institution : le dossier ne dispose d'aucun historique interne.</div>`;
+    return;
+  }
+  conteneur.innerHTML = `
+    <div>
+      ${ligneSynthese("Crédits obtenus", synthese.nombre_credits)}
+      ${ligneSynthese("Crédits soldés", synthese.nombre_credits_soldes)}
+      ${ligneSynthese("Crédits en cours", synthese.nombre_credits_en_cours)}
+      ${ligneSynthese("Reste dû", formaterMontant(synthese.reste_du_total))}
+      ${ligneSynthese("Retard le plus long observé", synthese.jours_retard_max ? synthese.jours_retard_max + " jours" : "aucun")}
+    </div>`;
+}
+
+function afficherVerification() {
+  const montant = +$("#demande-montant").value;
+  const duree = +$("#demande-duree").value || 1;
+  const marge = (+$("#demande-recettes").value + +$("#demande-autres-revenus").value)
+    - +$("#demande-charges-activite").value - +$("#demande-charges-menage").value - +$("#demande-dette").value;
+  const echeance = Math.round(montant / duree);
+
+  const controles = [
+    ["Client identifié", !!$("#demande-client").value],
+    ["Montant et durée", montant > 0 && duree > 0],
+    ["Objet du financement", !!$("#demande-objet").value.trim()],
+    ["Produit de crédit", !!$("#demande-produit").value],
+    ["Activité renseignée", +$("#demande-recettes").value > 0],
+    ["Charges du ménage", +$("#demande-charges-menage").value > 0],
+    ["Engagements existants", true],
+  ];
+
+  $("#demande-verification").innerHTML = `
+    ${controles.map(([libelle, present]) => `
+      <div class="ligne-controle ${present ? "present" : "absent"}">
+        <span class="marque-controle">${present ? "✓" : "⚠"}</span>
+        <span>${libelle}${present ? "" : " — information manquante"}</span>
+      </div>`).join("")}
+    <div style="margin-top:16px">
+      ${ligneSynthese("Marge estimée", formaterMontant(marge))}
+      ${ligneSynthese("Échéance estimée", formaterMontant(echeance), "total" + (echeance > marge ? " negatif" : ""))}
+    </div>
+    ${echeance > marge ? '<div class="avertissement" style="margin-top:12px">L\'échéance estimée dépasse la marge estimée. Le dossier peut être enregistré : la décision reste la vôtre.</div>' : ""}
+  `;
+}
+
+async function enregistrerDossier() {
+  try {
+    const reponse = await api("/api/demandes-credit/analyser/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        identifiant_client: $("#demande-client").value,
+        identifiant_produit: $("#demande-produit").value || null,
+        montant_demande: +$("#demande-montant").value,
+        duree_mois: +$("#demande-duree").value,
+        objet_credit: $("#demande-objet").value,
+        anciennete_activite_mois: +$("#demande-anciennete").value,
+        saisonnalite_activite: $("#demande-saisonnalite").value,
+        recettes_activite: +$("#demande-recettes").value,
+        charges_activite: +$("#demande-charges-activite").value,
+        autres_revenus_menage: +$("#demande-autres-revenus").value,
+        charges_menage: +$("#demande-charges-menage").value,
+        mensualite_dette_existante: +$("#demande-dette").value,
+      }),
+    });
+    await ouvrirInstruction(reponse.identifiant_demande);
+    chargerTableauBord();
+  } catch (erreur) {
+    $("#message-demande").textContent = erreur.message;
+  }
+}
+
+/* ---------- Instruction du dossier ---------- */
+
+let demandeInstruite = null;
+
+async function ouvrirInstruction(identifiantDemande) {
+  demandeInstruite = await api(`/api/demandes-credit/${identifiantDemande}/`);
+  ouvrir("instruction");
+  afficherInstruction(demandeInstruite);
+}
+
+function afficherInstruction(dossier) {
+  const demande = dossier.demande;
+
+  $("#instruction-reference").textContent = demande.reference;
+  $("#instruction-client").textContent = demande.client;
+  $("#instruction-resume").textContent =
+    [formaterMontant(demande.montant_demande), `${demande.duree_mois} mois`, demande.objet_credit, demande.produit]
+      .filter(Boolean).join(" · ");
+  $("#instruction-decision").textContent = demande.decision_agent;
+
+  $("#instruction-dossier").innerHTML = `
+    <div>
+      ${ligneSynthese("Objet du financement", demande.objet_credit || "non renseigné")}
+      ${ligneSynthese("Produit", demande.produit || "non renseigné")}
+      ${ligneSynthese("Montant demandé", formaterMontant(demande.montant_demande))}
+      ${ligneSynthese("Durée", demande.duree_mois + " mois")}
+      ${ligneSynthese("Ancienneté de l'activité", demande.anciennete_activite_mois + " mois")}
+      ${ligneSynthese("Saisonnalité", demande.saisonnalite_activite || "non renseignée")}
+      ${ligneSynthese("Dossier constitué le", formaterDate(demande.cree_le))}
+    </div>`;
+
+  afficherCapacite(dossier.analyse.capacite);
+  afficherHistoriqueInstruction(dossier.analyse.historique);
+  afficherQualiteDossier(dossier.analyse.qualite_dossier);
+  afficherIndicateursExperimentaux(dossier.indicateurs_experimentaux);
+  afficherJournalDemande(dossier.journal);
+
+  $("#instruction-observations").value = demande.observations_agent || "";
+  $("#instruction-motif").value = demande.motif_decision || "";
+  $$('input[name="decision"]').forEach(bouton => (bouton.checked = bouton.value === demande.decision_agent));
+  $("#message-decision").textContent = "";
+
+  preparerSimulation(demande);
+}
+
+function afficherCapacite(capacite) {
+  const conteneur = $("#instruction-capacite");
+  if (!capacite.renseigne) {
+    conteneur.innerHTML = `<div class="avertissement">${capacite.alerte}</div>`;
+    return;
+  }
+  conteneur.innerHTML = `
+    <div>
+      ${capacite.lignes.map(ligne => ligneSynthese(
+        ligne.libelle,
+        (ligne.sens === "debit" ? "− " : "") + formaterMontant(ligne.montant),
+      )).join("")}
+      ${ligneSynthese("Marge estimée", formaterMontant(capacite.marge_estimee), "total")}
+      ${ligneSynthese("Échéance de la nouvelle demande", formaterMontant(capacite.echeance_estimee),
+        capacite.ecart < 0 ? "negatif" : "")}
+    </div>
+    ${capacite.alerte ? `<div class="avertissement" style="margin-top:12px">${capacite.alerte}</div>` : ""}
+    <p class="sous-titre" style="margin-top:10px">${capacite.note_methode}</p>`;
+}
+
+function afficherHistoriqueInstruction(historique) {
+  const conteneur = $("#instruction-historique");
+  if (historique.sans_historique) {
+    conteneur.innerHTML = `<div class="avertissement">${historique.message}</div>`;
+    return;
+  }
+  conteneur.innerHTML = `
+    <div>
+      ${ligneSynthese("Crédits antérieurs", historique.nombre_credits)}
+      ${ligneSynthese("Soldés", historique.nombre_soldes)}
+      ${ligneSynthese("En cours", historique.nombre_en_cours)}
+      ${ligneSynthese("Crédits ayant connu un retard", historique.nombre_avec_retard)}
+      ${ligneSynthese("Retard le plus long", historique.jours_retard_max ? historique.jours_retard_max + " jours" : "aucun")}
+      ${ligneSynthese("Échéances actuellement en retard", historique.echeances_en_retard)}
+      ${ligneSynthese("Reste dû", formaterMontant(historique.reste_du_total))}
+    </div>`;
+}
+
+function afficherQualiteDossier(qualite) {
+  $("#instruction-qualite").innerHTML = `
+    <p class="sous-titre" style="margin-bottom:10px">${qualite.renseignes} informations sur ${qualite.total} sont renseignées (${qualite.completude} %).</p>
+    ${qualite.controles.map(controle => `
+      <div class="ligne-controle ${controle.present ? "present" : "absent"}">
+        <span class="marque-controle">${controle.present ? "✓" : "⚠"}</span>
+        <span>${controle.libelle}${controle.present ? "" : " — absent"}</span>
+      </div>`).join("")}`;
+}
+
+function afficherIndicateursExperimentaux(indicateurs) {
+  $("#instruction-experimental").innerHTML = `
+    <div class="avertissement" style="margin-bottom:14px">${indicateurs.avertissement}</div>
+    <div>
+      ${ligneSynthese("Indicateur composite", `${indicateurs.score_risque} / 100`)}
+      ${ligneSynthese("Niveau indicatif", indicateurs.niveau_risque)}
+    </div>
+    ${indicateurs.points_vigilance.length ? `<p class="surtexte" style="margin-top:14px">Points de vigilance</p>
+      <ul class="liste-puces">${indicateurs.points_vigilance.map(point => `<li>${point}</li>`).join("")}</ul>` : ""}
+    ${indicateurs.facteurs_favorables.length ? `<p class="surtexte" style="margin-top:12px">Éléments favorables</p>
+      <ul class="liste-puces">${indicateurs.facteurs_favorables.map(point => `<li>${point}</li>`).join("")}</ul>` : ""}`;
+}
+
+function afficherJournalDemande(journal) {
+  const conteneur = $("#instruction-journal");
+  conteneur.className = "liste-journal";
+  if (!journal.length) {
+    conteneur.innerHTML = '<p class="sous-titre">Aucun événement.</p>';
+    return;
+  }
+  conteneur.innerHTML = journal.map(entree => `
+    <div class="entree-journal">
+      <time>${formaterDate(entree.date)}</time>
+      <span>${entree.evenement.replaceAll("_", " ").toLowerCase()}</span>
+    </div>`).join("");
+}
+
+/* ---------- Simulation ---------- */
+
+let minuteurSimulation = null;
+
+function preparerSimulation(demande) {
+  const curseur = $("#simulation-montant");
+  curseur.max = Math.max(500000, demande.montant_demande * 2);
+  curseur.value = demande.montant_demande;
+  $("#simulation-duree").value = String(demande.duree_mois);
+  $("#simulation-montant-valeur").textContent = formaterMontant(demande.montant_demande);
+  lancerSimulation();
+}
+
+function lancerSimulation() {
+  if (!demandeInstruite) return;
+  $("#simulation-montant-valeur").textContent = formaterMontant(+$("#simulation-montant").value);
+  clearTimeout(minuteurSimulation);
+  minuteurSimulation = setTimeout(async () => {
+    const identifiant = demandeInstruite.demande.identifiant;
+    const montant = +$("#simulation-montant").value;
+    const duree = +$("#simulation-duree").value;
+    const resultat = await api(`/api/demandes-credit/${identifiant}/simuler/?montant=${montant}&duree=${duree}`);
+    afficherSimulation(resultat);
+  }, 180);
+}
+
+function afficherSimulation(resultat) {
+  const actuel = resultat.situation_actuelle;
+  const simule = resultat.simulation;
+  const ligne = (libelle, gauche, droite, classe = "") => `
+    <tr class="${classe}">
+      <td>${libelle}</td>
+      <td class="montant">${gauche}</td>
+      <td class="montant">${droite}</td>
+    </tr>`;
+
+  $("#tableau-simulation").innerHTML = `
+    <div class="tableau-wrap">
+      <table>
+        <thead><tr><th></th><th class="montant">Dossier actuel</th><th class="montant">Simulation</th></tr></thead>
+        <tbody>
+          ${ligne("Montant", formaterMontant(actuel.montant), formaterMontant(simule.montant))}
+          ${ligne("Durée", actuel.duree_mois + " mois", simule.duree_mois + " mois")}
+          ${ligne("Échéance estimée", formaterMontant(actuel.echeance_estimee), formaterMontant(simule.echeance_estimee))}
+          ${ligne("Marge estimée", formaterMontant(actuel.marge_estimee), formaterMontant(simule.marge_estimee))}
+          ${ligne("Écart marge / échéance", formaterMontant(actuel.ecart), formaterMontant(simule.ecart))}
+        </tbody>
+      </table>
+    </div>
+    ${simule.ecart < 0
+      ? '<div class="avertissement" style="margin-top:12px">L\'échéance simulée reste supérieure à la marge estimée.</div>'
+      : ""}`;
 }
 
 /* ---------- Listes simples ---------- */
@@ -608,8 +936,50 @@ $("#annuler-client").onclick = () => fermerDialogue("dialogue-client");
 $("#modifier-institution").onclick = () => ouvrirDialogue("dialogue-institution");
 $("#retour-clients").onclick = () => ouvrir("clients");
 $("#fiche-modifier").onclick = () => clientAffiche && ouvrirFormulaireClient(clientAffiche);
-$("#fiche-nouvelle-demande").onclick = () => ouvrirDialogueDemande(clientAffiche?.identifiant);
-$("#nouvelle-demande").onclick = () => ouvrirDialogueDemande();
+$("#fiche-nouvelle-demande").onclick = () => ouvrirNouvelleDemande(clientAffiche?.identifiant);
+$("#nouvelle-demande").onclick = () => ouvrirNouvelleDemande();
+$("#etape-precedente").onclick = () => { etapeCourante = Math.max(1, etapeCourante - 1); afficherEtape(); };
+$("#etape-suivante").onclick = etapeSuivante;
+$("#enregistrer-dossier").onclick = enregistrerDossier;
+$("#instruction-voir-client").onclick = () => demandeInstruite && ouvrirFicheClient(demandeInstruite.demande.identifiant_client);
+$("#simulation-montant").oninput = lancerSimulation;
+$("#simulation-duree").onchange = lancerSimulation;
+
+$("#appliquer-simulation").onclick = async () => {
+  if (!demandeInstruite) return;
+  const identifiant = demandeInstruite.demande.identifiant;
+  await api(`/api/demandes-credit/${identifiant}/appliquer-simulation/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ montant: +$("#simulation-montant").value, duree_mois: +$("#simulation-duree").value }),
+  });
+  await ouvrirInstruction(identifiant);
+};
+
+$("#enregistrer-decision").onclick = async () => {
+  const choisi = $$('input[name="decision"]').find(bouton => bouton.checked);
+  if (!choisi) {
+    $("#message-decision").textContent = "Sélectionnez une décision.";
+    return;
+  }
+  try {
+    const identifiant = demandeInstruite.demande.identifiant;
+    await api(`/api/demandes-credit/${identifiant}/decision/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        decision: choisi.value,
+        motif: $("#instruction-motif").value,
+        observations: $("#instruction-observations").value,
+      }),
+    });
+    await ouvrirInstruction(identifiant);
+    $("#message-decision").textContent = "Décision enregistrée.";
+    chargerTableauBord();
+  } catch (erreur) {
+    $("#message-decision").textContent = erreur.message;
+  }
+};
 $("#recherche-demandes").oninput = () => chargerDemandes();
 $("#filtre-risque").onchange = () => chargerDemandes();
 $("#recherche-clients").oninput = () => { pageClients = 1; chargerClients(); };
@@ -650,25 +1020,6 @@ $("#formulaire-client").onsubmit = async evenement => {
   }
 };
 
-$("#formulaire-demande").onsubmit = async evenement => {
-  evenement.preventDefault();
-  try {
-    await api("/api/demandes-credit/analyser/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        identifiant_client: $("#demande-client").value,
-        montant_demande: +$("#demande-montant").value,
-        duree_mois: +$("#demande-duree").value,
-      }),
-    });
-    fermerDialogue("dialogue-demande");
-    ouvrir("demandes");
-    chargerTableauBord();
-  } catch (erreur) {
-    $("#message-demande").textContent = erreur.message;
-  }
-};
 
 $("#formulaire-institution").onsubmit = async evenement => {
   evenement.preventDefault();

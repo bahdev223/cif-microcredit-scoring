@@ -7,14 +7,16 @@ from pathlib import Path
 from django.core.paginator import Paginator
 from django.db.models import Sum
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from audit.models import JournalAudit
 from clients.dossier import construire_dossier
 from clients.models import ActiviteImportee, Client, Institution
-from credits.models import CreditImporte, DemandeCredit, DemandeImportee, EcheanceImportee, PaiementImporte
+from credits.models import CreditImporte, DemandeCredit, DemandeImportee, EcheanceImportee, PaiementImporte, ProduitCredit
 from credits.rapprochement import date_observation_portefeuille, rapprocher_credit, tranche_retard
+from evaluation_risque.analyse_dossier import analyser_dossier
 from evaluation_risque.explicabilite import expliquer_prediction
 from evaluation_risque.predicteur import predire_risque
 
@@ -463,9 +465,25 @@ def enregistrer_institution(requete):
     return JsonResponse({"institution": {"nom": institution.nom, "sigle": institution.sigle, "ville": institution.ville, "pays": institution.pays}})
 
 
+@require_GET
+def liste_produits_credit(requete):
+    produits = ProduitCredit.objects.filter(actif=True).order_by("libelle")
+    return JsonResponse({"produits": [{
+        "identifiant": produit.id,
+        "code": produit.code,
+        "libelle": produit.libelle,
+        "montant_min": produit.montant_min,
+        "montant_max": produit.montant_max,
+        "duree_min_mois": produit.duree_min_mois,
+        "duree_max_mois": produit.duree_max_mois,
+        "secteurs_vises": produit.secteurs_vises,
+    } for produit in produits]})
+
+
 @csrf_exempt
 @require_POST
 def analyser_demande_credit(requete):
+    """Enregistre un dossier de demande et produit son analyse préliminaire."""
     try:
         donnees = lire_json(requete)
         identifiant_client = donnees.get("identifiant_client")
@@ -475,21 +493,200 @@ def analyser_demande_credit(requete):
             client = Client.objects.create(
                 nom_complet=donnees["nom_complet"],
                 secteur_activite=donnees["secteur_activite"],
-                revenu_mensuel=int(donnees["revenu_mensuel"]),
-                charges_mensuelles=int(donnees["charges_mensuelles"]),
+                revenu_mensuel=int(donnees.get("recettes_activite") or donnees.get("revenu_mensuel") or 0),
+                charges_mensuelles=int(donnees.get("charges_activite") or donnees.get("charges_mensuelles") or 0),
                 mensualite_dette_existante=int(donnees.get("mensualite_dette_existante", 0)),
-                anciennete_activite_mois=int(donnees["anciennete_activite_mois"]),
+                anciennete_activite_mois=int(donnees.get("anciennete_activite_mois") or 0),
                 nombre_retards=int(donnees.get("nombre_retards", 0)),
                 regularite_tontine=donnees.get("regularite_tontine", "inconnue"),
             )
-        demande_credit = DemandeCredit.objects.create(client=client, montant_demande=int(donnees["montant_demande"]), duree_mois=int(donnees.get("duree_mois", 12)))
-    except (Client.DoesNotExist, KeyError, TypeError, ValueError) as erreur:
-        return JsonResponse({"erreur": f"Donnees invalides : {erreur}"}, status=400)
 
-    prediction = predire_risque(client, demande_credit)
+        demande_credit = DemandeCredit.objects.create(
+            client=client,
+            produit_id=donnees.get("identifiant_produit") or None,
+            montant_demande=int(donnees["montant_demande"]),
+            duree_mois=int(donnees.get("duree_mois", 12)),
+            objet_credit=(donnees.get("objet_credit") or "").strip(),
+            recettes_activite=int(donnees.get("recettes_activite") or client.revenu_mensuel or 0),
+            charges_activite=int(donnees.get("charges_activite") or client.charges_mensuelles or 0),
+            autres_revenus_menage=int(donnees.get("autres_revenus_menage") or 0),
+            charges_menage=int(donnees.get("charges_menage") or 0),
+            mensualite_dette_existante=int(donnees.get("mensualite_dette_existante") or client.mensualite_dette_existante or 0),
+            anciennete_activite_mois=int(donnees.get("anciennete_activite_mois") or client.anciennete_activite_mois or 0),
+            saisonnalite_activite=(donnees.get("saisonnalite_activite") or "").strip(),
+            observations_agent=(donnees.get("observations_agent") or "").strip(),
+        )
+    except (Client.DoesNotExist, KeyError, TypeError, ValueError) as erreur:
+        return JsonResponse({"erreur": f"Données invalides : {erreur}"}, status=400)
+
+    prediction = enregistrer_analyse(demande_credit)
+    return JsonResponse({
+        "identifiant_demande": demande_credit.id,
+        "identifiant_client": client.id,
+        "score_risque": prediction["score_risque"],
+        "niveau_risque": prediction["niveau_risque"],
+    }, status=201)
+
+
+def enregistrer_analyse(demande_credit):
+    """Lance les règles expérimentales et trace l'analyse au journal d'audit."""
+    prediction = predire_risque(demande_credit.client, demande_credit)
     demande_credit.score_risque = prediction["score_risque"]
     demande_credit.niveau_risque = prediction["niveau_risque"]
     demande_credit.save(update_fields=["score_risque", "niveau_risque"])
-    explication = expliquer_prediction(prediction)
-    JournalAudit.objects.create(demande_credit=demande_credit, type_evenement="ANALYSE_RISQUE_EFFECTUEE", contenu={"prediction": prediction, "explication": explication})
-    return JsonResponse({"identifiant_demande": demande_credit.id, "identifiant_client": client.id, "score_risque": prediction["score_risque"], "niveau_risque": prediction["niveau_risque"], "recommandation": prediction["recommandation"], "indicateurs": prediction["caracteristiques"], "explication": explication}, status=201)
+    JournalAudit.objects.create(
+        demande_credit=demande_credit,
+        type_evenement="ANALYSE_PRELIMINAIRE_EFFECTUEE",
+        contenu={"prediction": prediction, "explication": expliquer_prediction(prediction)},
+    )
+    return prediction
+
+
+@require_GET
+def dossier_instruction(requete, identifiant_demande):
+    """Tout ce qu'il faut pour instruire une demande, sur un seul écran."""
+    try:
+        demande = DemandeCredit.objects.select_related("client", "produit").get(pk=identifiant_demande)
+    except DemandeCredit.DoesNotExist:
+        return JsonResponse({"erreur": "Demande introuvable."}, status=404)
+
+    date_observation = date_observation_portefeuille()
+    prediction = predire_risque(demande.client, demande)
+    return JsonResponse({
+        "demande": serialiser_demande(demande),
+        "client": serialiser_client(demande.client),
+        "analyse": analyser_dossier(demande, date_observation),
+        "indicateurs_experimentaux": {
+            "score_risque": prediction["score_risque"],
+            "niveau_risque": prediction["niveau_risque"],
+            "facteurs_favorables": prediction["facteurs_favorables"],
+            "points_vigilance": prediction["points_vigilance"],
+            "regles_declenchees": prediction["regles_declenchees"],
+            "avertissement": "Analyse indicative uniquement. Aucun modèle n'a été validé sur les données de l'institution.",
+        },
+        "journal": [{
+            "evenement": journal.type_evenement,
+            "date": journal.cree_le.isoformat(),
+        } for journal in demande.journaux_audit.order_by("-cree_le")[:20]],
+        "date_observation": date_observation.isoformat(),
+    })
+
+
+def serialiser_demande(demande):
+    return {
+        "identifiant": demande.id,
+        "reference": f"DEM-{demande.id:05d}",
+        "identifiant_client": demande.client_id,
+        "client": demande.client.nom_complet,
+        "produit": demande.produit.libelle if demande.produit else "",
+        "montant_demande": demande.montant_demande,
+        "duree_mois": demande.duree_mois,
+        "objet_credit": demande.objet_credit,
+        "echeance_estimee": demande.echeance_estimee,
+        "recettes_activite": demande.recettes_activite,
+        "charges_activite": demande.charges_activite,
+        "autres_revenus_menage": demande.autres_revenus_menage,
+        "charges_menage": demande.charges_menage,
+        "mensualite_dette_existante": demande.mensualite_dette_existante,
+        "anciennete_activite_mois": demande.anciennete_activite_mois,
+        "saisonnalite_activite": demande.saisonnalite_activite,
+        "observations_agent": demande.observations_agent,
+        "decision_agent": demande.decision_agent,
+        "motif_decision": demande.motif_decision,
+        "date_decision": demande.date_decision.isoformat() if demande.date_decision else "",
+        "score_risque": demande.score_risque,
+        "niveau_risque": demande.niveau_risque,
+        "cree_le": demande.cree_le.isoformat(),
+    }
+
+
+@require_GET
+def simuler_demande(requete, identifiant_demande):
+    """Recalcule l'échéance pour un autre montant ou une autre durée.
+
+    La demande n'est pas modifiée : la simulation sert à discuter, pas à
+    décider. C'est l'agent qui choisit ensuite de l'appliquer ou non.
+    """
+    try:
+        demande = DemandeCredit.objects.select_related("client").get(pk=identifiant_demande)
+        montant = int(requete.GET.get("montant", demande.montant_demande))
+        duree = max(1, int(requete.GET.get("duree", demande.duree_mois)))
+    except DemandeCredit.DoesNotExist:
+        return JsonResponse({"erreur": "Demande introuvable."}, status=404)
+    except (TypeError, ValueError) as erreur:
+        return JsonResponse({"erreur": f"Paramètres invalides : {erreur}"}, status=400)
+
+    marge = demande.marge_estimee
+    echeance_simulee = round(montant / duree)
+    return JsonResponse({
+        "situation_actuelle": {
+            "montant": demande.montant_demande,
+            "duree_mois": demande.duree_mois,
+            "echeance_estimee": demande.echeance_estimee,
+            "marge_estimee": marge,
+            "ecart": marge - demande.echeance_estimee,
+        },
+        "simulation": {
+            "montant": montant,
+            "duree_mois": duree,
+            "echeance_estimee": echeance_simulee,
+            "marge_estimee": marge,
+            "ecart": marge - echeance_simulee,
+        },
+    })
+
+
+@csrf_exempt
+@require_POST
+def appliquer_simulation(requete, identifiant_demande):
+    try:
+        demande = DemandeCredit.objects.get(pk=identifiant_demande)
+        donnees = lire_json(requete)
+        ancien_montant, ancienne_duree = demande.montant_demande, demande.duree_mois
+        demande.montant_demande = int(donnees["montant"])
+        demande.duree_mois = max(1, int(donnees["duree_mois"]))
+        demande.save(update_fields=["montant_demande", "duree_mois"])
+    except DemandeCredit.DoesNotExist:
+        return JsonResponse({"erreur": "Demande introuvable."}, status=404)
+    except (KeyError, TypeError, ValueError) as erreur:
+        return JsonResponse({"erreur": f"Données invalides : {erreur}"}, status=400)
+
+    JournalAudit.objects.create(
+        demande_credit=demande,
+        type_evenement="SIMULATION_APPLIQUEE",
+        contenu={
+            "avant": {"montant": ancien_montant, "duree_mois": ancienne_duree},
+            "apres": {"montant": demande.montant_demande, "duree_mois": demande.duree_mois},
+        },
+    )
+    enregistrer_analyse(demande)
+    return JsonResponse({"demande": serialiser_demande(demande)})
+
+
+@csrf_exempt
+@require_POST
+def enregistrer_decision(requete, identifiant_demande):
+    """La décision est prise par l'agent. L'application se contente de la tracer."""
+    decisions_valides = {code for code, _ in DemandeCredit.DECISIONS}
+    try:
+        demande = DemandeCredit.objects.get(pk=identifiant_demande)
+        donnees = lire_json(requete)
+        decision = donnees["decision"]
+        if decision not in decisions_valides:
+            return JsonResponse({"erreur": f"Décision inconnue : {decision}"}, status=400)
+        demande.decision_agent = decision
+        demande.motif_decision = (donnees.get("motif") or "").strip()
+        demande.observations_agent = (donnees.get("observations") or "").strip()
+        demande.date_decision = timezone.now()
+        demande.save(update_fields=["decision_agent", "motif_decision", "observations_agent", "date_decision"])
+    except DemandeCredit.DoesNotExist:
+        return JsonResponse({"erreur": "Demande introuvable."}, status=404)
+    except (KeyError, TypeError, ValueError) as erreur:
+        return JsonResponse({"erreur": f"Données invalides : {erreur}"}, status=400)
+
+    JournalAudit.objects.create(
+        demande_credit=demande,
+        type_evenement="DECISION_ENREGISTREE",
+        contenu={"decision": demande.decision_agent, "motif": demande.motif_decision},
+    )
+    return JsonResponse({"demande": serialiser_demande(demande)})
