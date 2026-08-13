@@ -12,6 +12,8 @@ Ce dossier rassemble la référence fonctionnelle, technique et data du prototyp
 | `06-laboratoire-synthetique.md` | intention du laboratoire data |
 | `07-dictionnaire-donnees-synthetiques.md` | contrat complet du monde fictif |
 | `08-guide-technique-environnement.md` | installation, lancement, structure et exploitation |
+| `09-exploitation-v1.md` | rôles, Docker, Swagger et exploitation de la V1 |
+| `10-guide-agents.md` | contrat de collaboration et garde-fous anti-régression |
+| `11-prompts-agents.md` | prompts prêts à copier pour les agents spécialisés |
 
 Pour démarrer sans contexte, lire d'abord le guide technique, puis le guide de démonstration.
-

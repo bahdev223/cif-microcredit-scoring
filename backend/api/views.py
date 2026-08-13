@@ -7,7 +7,7 @@ from django.core.paginator import Paginator
 from django.db.models import Sum
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from audit.models import JournalAudit
 from clients.models import ActiviteImportee, Client, Institution
@@ -328,6 +328,44 @@ def creer_client(requete):
     except (KeyError, TypeError, ValueError) as erreur:
         return JsonResponse({"erreur": f"Données invalides : {erreur}"}, status=400)
     return JsonResponse({"client": serialiser_client(client)}, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["PUT", "PATCH"])
+def modifier_client(requete, identifiant_client):
+    try:
+        donnees = lire_json(requete)
+        client = Client.objects.get(pk=identifiant_client)
+        champs = (
+            "nom_complet", "secteur_activite", "revenu_mensuel", "charges_mensuelles",
+            "mensualite_dette_existante", "anciennete_activite_mois",
+            "nombre_retards", "regularite_tontine",
+        )
+        for champ in champs:
+            if champ in donnees:
+                valeur = donnees[champ]
+                setattr(client, champ, valeur.strip() if champ in ("nom_complet", "secteur_activite") else valeur)
+        client.full_clean()
+        client.save()
+    except Client.DoesNotExist:
+        return JsonResponse({"erreur": "Client introuvable."}, status=404)
+    except (TypeError, ValueError) as erreur:
+        return JsonResponse({"erreur": f"Données invalides : {erreur}"}, status=400)
+    return JsonResponse({"client": serialiser_client(client)})
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def supprimer_client(requete, identifiant_client):
+    try:
+        client = Client.objects.get(pk=identifiant_client)
+        nom = client.nom_complet
+        client.delete()
+    except Client.DoesNotExist:
+        return JsonResponse({"erreur": "Client introuvable."}, status=404)
+    except Exception:
+        return JsonResponse({"erreur": "Ce client possède des demandes métier protégées. Supprimez ou archivez d'abord ses demandes."}, status=409)
+    return JsonResponse({"message": f"Client « {nom} » supprimé."})
 
 
 @csrf_exempt
