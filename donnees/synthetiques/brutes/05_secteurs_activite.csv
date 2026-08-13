@@ -1,9 +1,0 @@
-identifiant_secteur,code_secteur,libelle_secteur,cycle_activite
-SEC-01,COMMERCE,Commerce de détail,continu
-SEC-02,AGRICULTURE,Production agricole,tres_saisonnier
-SEC-03,ELEVAGE,Élevage,saisonnier
-SEC-04,ARTISANAT,Artisanat,saisonnier
-SEC-05,RESTAURATION,Restauration et vente de repas,continu
-SEC-06,TRANSPORT,Transport de personnes et de marchandises,continu
-SEC-07,SERVICES,Services de proximité,continu
-SEC-08,PETITE_PRODUCTION,Petite production et transformation,saisonnier

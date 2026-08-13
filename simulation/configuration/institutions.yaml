@@ -26,7 +26,7 @@ institutions:
     # Portefeuille de ville : cycles courts, montants plus élevés, peu de
     # saisonnalité, exposition faible aux chocs agricoles.
     latent:
-      nombre_clients_cible: 10000
+      nombre_clients_cible: 50
       nombre_agences: 8
       clients_par_agent_cible: 320
       part_clients_stock_initial: 0.22
@@ -65,7 +65,7 @@ institutions:
     # récolte, forte exposition aux chocs sectoriels, système d'information
     # plus faible donc données plus sales.
     latent:
-      nombre_clients_cible: 10000
+      nombre_clients_cible: 50
       nombre_agences: 11
       clients_par_agent_cible: 260
       part_clients_stock_initial: 0.18
@@ -103,7 +103,7 @@ institutions:
     # Portefeuille d'investissement : durées longues, montants élevés,
     # instruction plus exigeante donc taux d'acceptation plus bas.
     latent:
-      nombre_clients_cible: 10000
+      nombre_clients_cible: 50
       nombre_agences: 6
       clients_par_agent_cible: 240
       part_clients_stock_initial: 0.12
@@ -141,7 +141,7 @@ institutions:
     # Institution de référence : c'est sur elle que se calibre le monde, et
     # c'est à elle qu'on compare les quatre autres.
     latent:
-      nombre_clients_cible: 10000
+      nombre_clients_cible: 50
       nombre_agences: 9
       clients_par_agent_cible: 300
       part_clients_stock_initial: 0.20
@@ -180,7 +180,7 @@ institutions:
     # clientèle est plus fragile et plus récente, son système d'information est
     # médiocre. C'est le test de résistance du moteur de scoring.
     latent:
-      nombre_clients_cible: 10000
+      nombre_clients_cible: 50
       nombre_agences: 7
       clients_par_agent_cible: 380
       part_clients_stock_initial: 0.06

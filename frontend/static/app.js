@@ -35,6 +35,24 @@ function chargerDossier(dossier) {
   mettreAJourCalculs();
 }
 
+function normaliserDossierImporte(dossier) {
+  const donnees = { ...casFatou, ...dossier };
+  const equivalences = {
+    nom: 'nom_complet',
+    nom_client: 'nom_complet',
+    secteur: 'secteur_activite',
+    montant: 'montant_demande',
+    duree: 'duree_mois',
+  };
+  Object.entries(equivalences).forEach(([source, destination]) => {
+    if (dossier[source] !== undefined && dossier[destination] === undefined) donnees[destination] = dossier[source];
+  });
+  Object.keys(donnees).forEach((cle) => {
+    if (typeof donnees[cle] === 'string') donnees[cle] = donnees[cle].trim();
+  });
+  return donnees;
+}
+
 function donneesClient() {
   const donnees = donneesApi();
   delete donnees.montant_demande;
@@ -221,22 +239,53 @@ document.querySelector('#recharger-cas').addEventListener('click', () => {
   identifiantClientSelectionne = null;
   chargerDossier(casFatou);
 });
-document.querySelector('#fichier-dossier').addEventListener('change', async (evenement) => {
-  const fichier = evenement.target.files[0];
+function analyserCsv(texte) {
+  const lignes = texte.replace(/^\uFEFF/, '').trim().split(/\r?\n/).filter(Boolean);
+  if (lignes.length < 2) throw new Error('Le CSV doit contenir une ligne de titres et une ligne de données.');
+  const separateur = lignes[0].includes(';') ? ';' : ',';
+  const titres = lignes[0].split(separateur).map((titre) => titre.trim().replace(/^"|"$/g, ''));
+  const valeurs = lignes[1].split(separateur).map((valeur) => valeur.trim().replace(/^"|"$/g, ''));
+  return Object.fromEntries(titres.map((titre, index) => [titre, valeurs[index] ?? '']));
+}
+
+async function importerFichier(fichier) {
   const message = document.querySelector('#message-chargement');
   if (!fichier) return;
   try {
-    const contenu = JSON.parse(await fichier.text());
+    const texte = await fichier.text();
+    const contenu = fichier.name.toLowerCase().endsWith('.csv') ? analyserCsv(texte) : JSON.parse(texte);
     if (Array.isArray(contenu)) {
       throw new Error('Ce fichier contient plusieurs dossiers. Charge un dossier unique comme cas_fatou.json.');
     }
-    chargerDossier(contenu);
+    chargerDossier(normaliserDossierImporte(contenu));
     message.textContent = `Dossier « ${contenu.nom_complet} » chargé. Tu peux maintenant l'analyser.`;
   } catch (erreur) {
     message.textContent = `Chargement impossible : ${erreur.message}`;
-    evenement.target.value = '';
+  } finally {
+    document.querySelector('#fichier-dossier').value = '';
+  }
+}
+
+document.querySelector('#fichier-dossier').addEventListener('change', (evenement) => {
+  importerFichier(evenement.target.files[0]);
+});
+const zoneDepot = document.querySelector('#zone-depot');
+zoneDepot.addEventListener('click', () => document.querySelector('#fichier-dossier').click());
+zoneDepot.addEventListener('keydown', (evenement) => {
+  if (evenement.key === 'Enter' || evenement.key === ' ') {
+    evenement.preventDefault();
+    document.querySelector('#fichier-dossier').click();
   }
 });
+['dragenter', 'dragover'].forEach((type) => zoneDepot.addEventListener(type, (evenement) => {
+  evenement.preventDefault();
+  zoneDepot.classList.add('survol');
+}));
+['dragleave', 'drop'].forEach((type) => zoneDepot.addEventListener(type, (evenement) => {
+  evenement.preventDefault();
+  zoneDepot.classList.remove('survol');
+}));
+zoneDepot.addEventListener('drop', (evenement) => importerFichier(evenement.dataTransfer.files[0]));
 document.querySelector('#simuler-montant').addEventListener('click', () => {
   document.querySelector('#montant_demande').value = Math.round(valeur('montant_demande') * 0.8 / 5000) * 5000;
   document.querySelector('#formulaire-dossier').requestSubmit();

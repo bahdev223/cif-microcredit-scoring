@@ -98,11 +98,11 @@ python simulation/generer.py --graine 7
 python tests/verifier_monde.py
 ```
 
-La génération remplace les CSV produits sous `donnees/synthetiques/`. Le contrôle doit réussir avant toute utilisation ou publication. Le manifeste `donnees/synthetiques/verite/manifeste_generation.json` conserve la graine, les tailles et les empreintes des fichiers.
+La génération écrit les CSV hors du dépôt dans `C:\Users\hp\cif-microcredit-donnees-locales\synthetiques\` par défaut. Le contrôle doit réussir avant toute utilisation ou publication. Le manifeste sous `verite/manifeste_generation.json` conserve la graine, les tailles et les empreintes des fichiers.
 
 ### Règle d'étanchéité
 
-Seules les tables de `donnees/synthetiques/brutes/` peuvent servir à entraîner ou évaluer un modèle. Le dossier `verite/` est réservé à la validation du simulateur ; il contient des informations impossibles à connaître lors d'une décision réelle. Le lire dans un notebook de scoring créerait une fuite de données.
+Seules les tables de `brutes/` dans le répertoire local peuvent servir à entraîner ou évaluer un modèle. Le dossier `verite/` est réservé à la validation du simulateur ; il contient des informations impossibles à connaître lors d'une décision réelle. Le lire dans un notebook de scoring créerait une fuite de données.
 
 Le détail de chaque colonne et des contrôles est dans `07-dictionnaire-donnees-synthetiques.md`.
 
@@ -136,7 +136,7 @@ python tests/verifier_monde.py
 git status
 ```
 
-Si des données synthétiques ont été régénérées, vérifier les CSV modifiés avec `git diff --stat`, puis inclure le manifeste associé dans le même commit. Ne pas versionner `.venv/`, `__pycache__/`, secrets ou données réelles de clients.
+Si des données synthétiques ont été régénérées, vérifier les contrôles, sans ajouter les CSV au commit. Ne pas versionner `.venv/`, `__pycache__/`, secrets ou données réelles de clients.
 
 ## 10. Dépannage rapide
 
@@ -148,4 +148,3 @@ Si des données synthétiques ont été régénérées, vérifier les CSV modifi
 | l'analyse renvoie une page HTML | vérifier l'URL API, le serveur et les migrations |
 | fichier JSON refusé | importer un dossier unique conforme au schéma, pas un CSV |
 | contrôle du monde en échec | ne pas publier les données ; examiner le premier contrôle en erreur |
-

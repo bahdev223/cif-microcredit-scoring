@@ -31,7 +31,7 @@ Ouvrir [http://127.0.0.1:8000/](http://127.0.0.1:8000/). L'écran charge Fatou a
 | Générer le monde fictif | `python simulation/generer.py` |
 | Contrôler les données | `python tests/verifier_monde.py` |
 
-La génération réécrit les CSV sous `donnees/synthetiques/`. Lancer ensuite les contrôles avant toute publication.
+La génération écrit les CSV hors du dépôt, dans `C:\Users\hp\cif-microcredit-donnees-locales\synthetiques\` par défaut. Lancer ensuite les contrôles avant toute publication.
 
 ## Organisation
 
@@ -60,4 +60,3 @@ Le détail est dans le [guide technique de l'environnement](documentation/08-gui
 - [Dictionnaire des données synthétiques](documentation/07-dictionnaire-donnees-synthetiques.md)
 - [Guide technique : installation, exécution et structure](documentation/08-guide-technique-environnement.md)
 - [Données fictives](donnees/README.md)
-

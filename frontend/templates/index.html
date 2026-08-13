@@ -63,10 +63,13 @@
       </section>
 
       <section class="carte chargement-donnees">
-        <p class="surtitre">Charger un dossier fictif</p>
-        <label for="fichier-dossier">Sélectionner un fichier JSON</label>
-        <input id="fichier-dossier" type="file" accept="application/json,.json" />
-        <p id="message-chargement" class="aide">Exemple : <code>donnees/echantillons/cas_fatou.json</code>. Un seul dossier JSON à la fois.</p>
+        <p class="surtitre">Charger un dossier</p>
+        <div id="zone-depot" class="zone-depot" role="button" tabindex="0">
+          <strong>Glissez-déposez un fichier JSON ou CSV ici</strong>
+          <span>ou cliquez pour sélectionner un fichier</span>
+        </div>
+        <input id="fichier-dossier" class="visuellement-masque" type="file" accept="application/json,.json,text/csv,.csv" />
+        <p id="message-chargement" class="aide">JSON : un dossier complet. CSV : la première ligne de données d'un export client. Exemple : <code>donnees/echantillons/cas_fatou.json</code>.</p>
       </section>
 
       <form id="formulaire-dossier">

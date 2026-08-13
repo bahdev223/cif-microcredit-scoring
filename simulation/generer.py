@@ -33,6 +33,7 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import subprocess
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -45,9 +46,13 @@ from generateurs.institutions import generer_institutions
 
 RACINE = Path(__file__).resolve().parents[1]
 CONFIGURATION = RACINE / "simulation" / "configuration"
-BRUTES = RACINE / "donnees" / "synthetiques" / "brutes"
-TRAITEES = RACINE / "donnees" / "synthetiques" / "traitees"
-VERITE = RACINE / "donnees" / "synthetiques" / "verite"
+REPERTOIRE_DONNEES = Path(os.environ.get(
+    "CIF_REPERTOIRE_DONNEES",
+    RACINE.parent / "cif-microcredit-donnees-locales" / "synthetiques",
+))
+BRUTES = REPERTOIRE_DONNEES / "brutes"
+TRAITEES = REPERTOIRE_DONNEES / "traitees"
+VERITE = REPERTOIRE_DONNEES / "verite"
 
 TOLERANCE_ACCEPTATION = 0.02
 TOLERANCE_DEFAUT = 0.02
@@ -247,7 +252,7 @@ def ecrire_manifeste(chemins, graine, version, journal_calibration, arguments):
         "commit_code": commit_du_code(),
         "calibration": journal_calibration,
         "fichiers": {
-            str(chemin.relative_to(RACINE)).replace("\\", "/"): {
+            str(chemin.relative_to(REPERTOIRE_DONNEES)).replace("\\", "/"): {
                 "lignes": sum(1 for _ in chemin.open(encoding="utf-8")) - 1,
                 "sha256": empreinte(chemin),
             }

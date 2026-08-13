@@ -10,12 +10,17 @@ Un monde qui échoue ici ne doit pas être publié.
 import csv
 import sys
 from datetime import date
+import os
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parents[1]
-BRUTES = RACINE / "donnees" / "synthetiques" / "brutes"
-TRAITEES = RACINE / "donnees" / "synthetiques" / "traitees"
-VERITE = RACINE / "donnees" / "synthetiques" / "verite"
+REPERTOIRE_DONNEES = Path(os.environ.get(
+    "CIF_REPERTOIRE_DONNEES",
+    RACINE.parent / "cif-microcredit-donnees-locales" / "synthetiques",
+))
+BRUTES = REPERTOIRE_DONNEES / "brutes"
+TRAITEES = REPERTOIRE_DONNEES / "traitees"
+VERITE = REPERTOIRE_DONNEES / "verite"
 
 DEBUT_DU_MONDE = date(2021, 1, 1)
 FIN_DU_MONDE = date(2025, 12, 31)
