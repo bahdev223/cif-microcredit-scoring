@@ -1,0 +1,42 @@
+<aside class="barre-laterale">
+  <div class="marque">
+    <span class="logo" id="marque-logo">C</span>
+    <div><strong id="nom-marque">CIF</strong><small>Gestion microcrédit</small></div>
+  </div>
+
+  <nav>
+    <div class="groupe-nav">
+      <span>Pilotage</span>
+      <button class="nav-actif" data-vue="vue-ensemble">Vue d'ensemble</button>
+      <button data-vue="portefeuille">Portefeuille</button>
+    </div>
+    <div class="groupe-nav">
+      <span>Crédit</span>
+      <button data-vue="demandes">Demandes<span class="compteur-nav masque" id="compteur-nav-demandes">0</span></button>
+      <button data-vue="clients">Clients</button>
+      <button data-vue="credits">Crédits</button>
+      <button data-vue="echeances">Échéances &amp; paiements</button>
+      <button data-vue="retards">Retards</button>
+    </div>
+    <div class="groupe-nav">
+      <span>Données</span>
+      <button data-vue="importer">Importer des données</button>
+      <button data-vue="qualite">Qualité des données</button>
+    </div>
+    <div class="groupe-nav">
+      <span>Paramétrage</span>
+      <button data-vue="produits">Produits de crédit</button>
+      <button data-vue="regles">Règles d'analyse</button>
+      <button data-vue="institution">Institution</button>
+    </div>
+    <div class="groupe-nav">
+      <span>Système</span>
+      <button data-vue="audit">Journal d'audit</button>
+    </div>
+  </nav>
+
+  <div class="pied-barre">
+    <span class="statut"><i></i> Service opérationnel</span>
+    <a href="/api/etat/" target="_blank">État de l'API</a>
+  </div>
+</aside>

@@ -1,0 +1,114 @@
+<section id="clients" class="vue vue-masque">
+  <div class="section">
+    <header>
+      <h2>Clients</h2>
+      <button id="nouveau-client" class="bouton-principal" type="button">Ajouter un client</button>
+    </header>
+    <div class="barre-outils">
+      <input id="recherche-clients" placeholder="Rechercher un client">
+    </div>
+    <div class="tableau-wrap">
+      <table class="donnees-tableau">
+        <thead><tr><th>Client</th><th>Activité</th><th>Ancienneté</th><th>Origine</th><th></th></tr></thead>
+        <tbody id="liste-clients"></tbody>
+      </table>
+    </div>
+    <div id="pagination-clients" class="pagination"></div>
+  </div>
+</section>
+
+<!-- Dossier du client -->
+<section id="fiche-client" class="vue vue-masque">
+  <div class="fil-ariane"><button class="bouton-secondaire ouvrir-vue" data-vue="clients" type="button">← Clients</button></div>
+
+  <div class="entete-dossier">
+    <div class="identite">
+      <span class="pastille" id="fiche-initiales">—</span>
+      <div>
+        <h1 id="fiche-nom">Client</h1>
+        <p id="fiche-resume" class="sous-titre"></p>
+      </div>
+    </div>
+    <div class="complement">
+      <span class="sous-titre" id="fiche-anciennete-relation"></span>
+      <div class="actions-dossier">
+        <button id="fiche-nouvelle-demande" class="bouton-principal" type="button">Nouvelle demande</button>
+        <button id="fiche-ajouter-document" class="bouton-secondaire" type="button">Ajouter un document</button>
+        <button id="fiche-modifier" class="bouton-secondaire" type="button">Modifier</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="onglets" data-onglets="fiche">
+    <button class="onglet-actif" data-panneau="fiche-apercu">Vue d'ensemble</button>
+    <button data-panneau="fiche-activite">Activité</button>
+    <button data-panneau="fiche-credits-onglet">Crédits</button>
+    <button data-panneau="fiche-paiements">Paiements</button>
+    <button data-panneau="fiche-documents-onglet">Documents</button>
+    <button data-panneau="fiche-historique">Historique</button>
+  </div>
+
+  <div id="fiche-apercu" class="panneau-onglet">
+    <div class="grille-2">
+      <div class="section">
+        <header><h2>Situation économique</h2></header>
+        <div class="donnees" id="fiche-situation"></div>
+      </div>
+      <div class="section">
+        <header><h2>Relation avec l'institution</h2></header>
+        <div class="donnees" id="fiche-relation"></div>
+      </div>
+    </div>
+    <div class="section">
+      <header><h2>Demandes en cours</h2></header>
+      <div id="fiche-demandes-en-cours"></div>
+    </div>
+  </div>
+
+  <div id="fiche-activite" class="panneau-onglet masque">
+    <div class="section">
+      <header><h2>Activités déclarées</h2></header>
+      <div id="fiche-activites"></div>
+    </div>
+  </div>
+
+  <div id="fiche-credits-onglet" class="panneau-onglet masque">
+    <div class="section">
+      <header><h2>Crédits, échéances et paiements</h2></header>
+      <div id="fiche-credits" class="credits"></div>
+    </div>
+  </div>
+
+  <div id="fiche-paiements" class="panneau-onglet masque">
+    <div class="section">
+      <header><h2>Versements reçus</h2></header>
+      <div class="tableau-wrap">
+        <table class="donnees-tableau">
+          <thead><tr><th>Date</th><th>Crédit</th><th class="montant">Montant</th><th>Canal</th></tr></thead>
+          <tbody id="liste-paiements-client"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="fiche-documents-onglet" class="panneau-onglet masque">
+    <div class="section">
+      <header>
+        <h2>Pièces du dossier</h2>
+        <span id="fiche-pieces-compte" class="sous-titre"></span>
+      </header>
+      <div id="fiche-documents" class="pieces"></div>
+      <span id="message-document" class="message"></span>
+      <input id="fichier-document" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" class="masque">
+      <input id="categorie-document" type="hidden">
+      <p class="sous-titre" style="margin-top:12px">PDF ou image, 5 Mo maximum. Aucune lecture automatique du contenu n'est faite.</p>
+    </div>
+  </div>
+
+  <div id="fiche-historique" class="panneau-onglet masque">
+    <div class="section">
+      <header><h2>Parcours du client</h2></header>
+      <div id="fiche-chronologie" class="chronologie"></div>
+    </div>
+  </div>
+</section>

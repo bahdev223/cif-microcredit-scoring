@@ -61,19 +61,43 @@ def construire_dossier(client, date_observation):
 
 
 def construire_synthese(client, rapprochements):
-    """Capacité déclarée et comportement de remboursement observé.
+    """Situation économique du dernier relevé, et comportement observé.
 
-    La marge est une soustraction, pas un score : recettes moins charges moins
-    engagements. Elle sert de point de départ à la discussion avec l'agent, qui
-    corrigera la formule si son institution calcule autrement.
+    La situation économique n'appartient pas au client mais à une date : ce
+    qu'il gagnait il y a trois ans n'est pas ce qu'il gagne aujourd'hui. On
+    affiche donc le dernier relevé daté, celui de la demande la plus récente,
+    et jamais une moyenne ni un cumul.
     """
-    marge = client.revenu_mensuel - client.charges_mensuelles - client.mensualite_dette_existante
+    dernier_releve = client.demandes_credit.order_by("-cree_le").first()
     soldes = [r for r in rapprochements if r["statut"].startswith("SOLDE")]
+
+    if dernier_releve and dernier_releve.recettes_activite:
+        situation = {
+            "renseignee": True,
+            "date_releve": dernier_releve.cree_le.date().isoformat(),
+            "recettes_declarees": dernier_releve.recettes_activite,
+            "charges_declarees": dernier_releve.charges_activite,
+            "charges_menage": dernier_releve.charges_menage,
+            "autres_revenus": dernier_releve.autres_revenus_menage,
+            "engagements_existants": dernier_releve.mensualite_dette_existante,
+            "resultat_activite": dernier_releve.recettes_activite - dernier_releve.charges_activite,
+            "marge_estimee": dernier_releve.marge_estimee,
+        }
+    else:
+        situation = {
+            "renseignee": False,
+            "date_releve": "",
+            "recettes_declarees": 0,
+            "charges_declarees": 0,
+            "charges_menage": 0,
+            "autres_revenus": 0,
+            "engagements_existants": 0,
+            "resultat_activite": 0,
+            "marge_estimee": 0,
+        }
+
     return {
-        "recettes_declarees": client.revenu_mensuel,
-        "charges_declarees": client.charges_mensuelles,
-        "engagements_existants": client.mensualite_dette_existante,
-        "marge_estimee": marge,
+        **situation,
         "nombre_credits": len(rapprochements),
         "nombre_credits_soldes": len(soldes),
         "nombre_credits_en_cours": sum(1 for r in rapprochements if r["statut"] in ("EN_COURS", "EN_RETARD")),

@@ -1,0 +1,72 @@
+<section id="importer" class="vue vue-masque">
+  <ol class="etapes" id="etapes-import">
+    <li data-etape-import="1"><span class="puce">1</span>Déposer</li>
+    <li data-etape-import="2"><span class="puce">2</span>Contrôler</li>
+    <li data-etape-import="3"><span class="puce">3</span>Corriger</li>
+    <li data-etape-import="4"><span class="puce">4</span>Confirmer</li>
+  </ol>
+
+  <div id="import-etape-1" class="etape-contenu">
+    <div class="section">
+      <header>
+        <h2>Déposer les fichiers</h2>
+        <span class="badge">CSV uniquement</span>
+      </header>
+      <div class="grille-2" style="margin-bottom:18px">
+        <label>Lot de référence disponible<select id="lot-reference"></select></label>
+        <div>
+          <span class="surtexte">Fichiers attendus</span>
+          <div id="fichiers-attendus" class="puces"></div>
+        </div>
+      </div>
+      <label id="zone-import" class="zone-import" for="fichiers-institution">
+        <span class="icone">↑</span>
+        <strong>Déposez les six fichiers CSV ici</strong>
+        <span>ou sélectionnez-les depuis votre poste</span>
+        <input id="fichiers-institution" type="file" accept=".csv,text/csv" multiple>
+      </label>
+      <p id="etat-import" class="message" style="margin-top:12px">Aucun fichier sélectionné. Rien n'est importé avant contrôle.</p>
+    </div>
+  </div>
+
+  <div id="import-etape-2" class="etape-contenu masque">
+    <div class="section">
+      <header><h2>Contrôle des fichiers</h2></header>
+      <div id="import-fichiers"></div>
+    </div>
+    <div class="section">
+      <div id="import-synthese"></div>
+    </div>
+  </div>
+
+  <div id="import-etape-3" class="etape-contenu masque">
+    <div class="section">
+      <header><h2>Anomalies détectées</h2></header>
+      <p class="sous-titre" style="margin-bottom:14px">Corrigez les fichiers à la source, puis redéposez le lot. Rien n'est modifié automatiquement.</p>
+      <div id="import-anomalies"></div>
+    </div>
+  </div>
+
+  <div id="import-etape-4" class="etape-contenu masque">
+    <div class="section">
+      <header><h2>Confirmation</h2></header>
+      <div id="import-confirmation"></div>
+    </div>
+  </div>
+
+  <div class="actions" style="justify-content:space-between">
+    <button id="import-precedent" class="bouton-secondaire" type="button">Précédent</button>
+    <span id="message-import" class="message"></span>
+    <span>
+      <button id="import-suivant" class="bouton-principal masque" type="button">Suivant</button>
+      <button id="confirmer-import" class="bouton-principal masque" type="button">Confirmer l'import</button>
+    </span>
+  </div>
+</section>
+
+<section id="qualite" class="vue vue-masque">
+  <div class="section">
+    <header><h2>Qualité du dernier lot contrôlé</h2></header>
+    <div id="rapport-import" class="etat-vide">Aucun lot contrôlé pour l'instant. Déposez des fichiers dans l'écran d'import.</div>
+  </div>
+</section>

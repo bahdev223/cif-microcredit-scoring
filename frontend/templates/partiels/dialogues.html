@@ -1,0 +1,102 @@
+<div id="dialogue-client" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-client">
+  <div class="fenetre-dialogue">
+    <div class="entete-dialogue">
+      <div>
+        <p class="surtexte">Client</p>
+        <h2 id="titre-dialogue-client">Nouveau client</h2>
+        <p class="sous-titre">La situation financière est relevée lors de chaque demande, pas ici : elle change dans le temps.</p>
+      </div>
+      <button class="fermer" data-fermer="dialogue-client" aria-label="Fermer">×</button>
+    </div>
+    <form id="formulaire-client" class="formulaire">
+      <input id="client-identifiant" type="hidden">
+      <div class="groupe-champs"><span class="surtexte">Identité</span></div>
+      <label class="pleine-largeur">Nom complet<input id="client-nom" required></label>
+      <div class="groupe-champs"><span class="surtexte">Activité principale</span></div>
+      <label>Secteur d'activité<input id="client-secteur" required placeholder="Commerce alimentaire"></label>
+      <label>Ancienneté de l'activité (mois)<input id="client-anciennete" type="number" min="0" required></label>
+      <div class="actions">
+        <span id="message-client" class="message"></span>
+        <button class="bouton-secondaire" type="button" data-fermer="dialogue-client">Annuler</button>
+        <button class="bouton-principal" type="submit">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="dialogue-institution" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-institution">
+  <div class="fenetre-dialogue">
+    <div class="entete-dialogue">
+      <div>
+        <p class="surtexte">Paramétrage</p>
+        <h2 id="titre-dialogue-institution">Informations de l'institution</h2>
+      </div>
+      <button class="fermer" data-fermer="dialogue-institution" aria-label="Fermer">×</button>
+    </div>
+    <form id="formulaire-institution" class="formulaire">
+      <label>Nom de l'institution<input id="institution-nom" required></label>
+      <label>Sigle<input id="institution-sigle" maxlength="30" required></label>
+      <label>Ville<input id="institution-ville"></label>
+      <label>Pays<input id="institution-pays" required></label>
+      <div class="actions">
+        <span id="message-institution" class="message"></span>
+        <button class="bouton-secondaire" type="button" data-fermer="dialogue-institution">Annuler</button>
+        <button class="bouton-principal" type="submit">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="dialogue-produit" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-produit">
+  <div class="fenetre-dialogue">
+    <div class="entete-dialogue">
+      <div>
+        <p class="surtexte">Paramétrage</p>
+        <h2 id="titre-dialogue-produit">Nouveau produit de crédit</h2>
+        <p class="sous-titre">Ces paramètres sont ceux de votre institution.</p>
+      </div>
+      <button class="fermer" data-fermer="dialogue-produit" aria-label="Fermer">×</button>
+    </div>
+    <form id="formulaire-produit" class="formulaire">
+      <input id="produit-identifiant" type="hidden">
+      <label>Code<input id="produit-code" maxlength="30" required placeholder="STOCK"></label>
+      <label>Libellé<input id="produit-libelle" required placeholder="Fonds de roulement"></label>
+      <label>Montant minimum (FCFA)<input id="produit-montant-min" type="number" min="0" value="0"></label>
+      <label>Montant maximum (FCFA)<input id="produit-montant-max" type="number" min="0" value="0"></label>
+      <label>Durée minimale (mois)<input id="produit-duree-min" type="number" min="0" value="0"></label>
+      <label>Durée maximale (mois)<input id="produit-duree-max" type="number" min="0" value="0"></label>
+      <label class="pleine-largeur">Secteurs visés<input id="produit-secteurs" placeholder="Commerce, artisanat…"></label>
+      <div class="actions">
+        <span id="message-produit" class="message"></span>
+        <button class="bouton-secondaire" type="button" data-fermer="dialogue-produit">Annuler</button>
+        <button class="bouton-principal" type="submit">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="dialogue-categorie" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-categorie">
+  <div class="fenetre-dialogue" style="width:min(420px,100%)">
+    <div class="entete-dialogue">
+      <div>
+        <p class="surtexte">Pièce du dossier</p>
+        <h2 id="titre-dialogue-categorie">Quel document ajoutez-vous ?</h2>
+      </div>
+      <button class="fermer" data-fermer="dialogue-categorie" aria-label="Fermer">×</button>
+    </div>
+    <div class="formulaire" style="grid-template-columns:1fr">
+      <label>Type de document
+        <select id="choix-categorie">
+          <option value="piece_identite">Pièce d'identité</option>
+          <option value="justificatif_activite">Justificatif d'activité</option>
+          <option value="photo">Photo</option>
+          <option value="autre">Autre document</option>
+        </select>
+      </label>
+      <div class="actions">
+        <button class="bouton-secondaire" type="button" data-fermer="dialogue-categorie">Annuler</button>
+        <button id="confirmer-categorie" class="bouton-principal" type="button">Choisir le fichier</button>
+      </div>
+    </div>
+  </div>
+</div>

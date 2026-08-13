@@ -1,0 +1,81 @@
+<section id="vue-ensemble" class="vue">
+  <div class="section">
+    <header><h2>Portefeuille crédit</h2></header>
+    <div class="chiffres">
+      <div><span>Clients suivis</span><strong id="kpi-clients">—</strong><small id="kpi-clients-actifs">—</small></div>
+      <div><span>Demandes en cours</span><strong id="kpi-demandes">—</strong><small id="kpi-demandes-detail">—</small></div>
+      <div><span>Crédits actifs</span><strong id="kpi-credits-actifs">—</strong><small id="kpi-credits-total">—</small></div>
+      <div><span>Encours restant dû</span><strong id="kpi-encours">—</strong><small id="kpi-decaisse">—</small></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <header><h2>Échéances et retards</h2></header>
+    <div class="chiffres">
+      <div><span>Échéances du jour</span><strong id="kpi-echeances-jour">—</strong><small id="kpi-echeances-jour-montant">—</small></div>
+      <div><span>À trente jours</span><strong id="kpi-echeances-venir">—</strong><small id="kpi-echeances-venir-montant">—</small></div>
+      <div class="alerte"><span>Échéances en retard</span><strong id="kpi-retards">—</strong><small id="kpi-retards-montant">—</small></div>
+      <div class="danger"><span>Crédits en retard</span><strong id="kpi-credits-retard">—</strong><small>sur l'ensemble du portefeuille</small></div>
+    </div>
+  </div>
+
+  <div class="grille-principale">
+    <div class="section">
+      <header>
+        <h2>Demandes nécessitant mon attention</h2>
+        <button class="bouton-discret ouvrir-vue" data-vue="demandes" type="button">Toutes les demandes</button>
+      </header>
+      <div class="tableau-wrap">
+        <table class="donnees-tableau">
+          <thead><tr><th>Client</th><th>État</th><th class="montant">Montant</th><th></th></tr></thead>
+          <tbody id="liste-attention"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="section">
+        <header><h2>Ancienneté des impayés</h2></header>
+        <div id="liste-tranches" class="donnees"></div>
+      </div>
+      <div class="section">
+        <header><h2>Institution</h2></header>
+        <div class="donnees" id="resume-institution-accueil"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="portefeuille" class="vue vue-masque">
+  <div class="section">
+    <div class="chiffres">
+      <div><span>Crédits</span><strong id="pf-credits">—</strong><small id="pf-credits-actifs">—</small></div>
+      <div><span>Montant décaissé</span><strong id="pf-decaisse">—</strong><small id="pf-rembourse">—</small></div>
+      <div><span>Encours restant dû</span><strong id="pf-encours">—</strong></div>
+      <div class="danger"><span>Crédits en retard</span><strong id="pf-retard">—</strong></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <header>
+      <h2>Crédits du portefeuille</h2>
+      <span id="pf-indisponibles" class="sous-titre"></span>
+    </header>
+    <div class="barre-outils">
+      <select id="pf-filtre-secteur"><option value="">Tous les secteurs</option></select>
+      <select id="pf-filtre-statut"><option value="">Tous les statuts</option></select>
+      <select id="pf-filtre-annee"><option value="">Toutes les périodes</option></select>
+    </div>
+    <div class="tableau-wrap">
+      <table class="donnees-tableau">
+        <thead><tr><th>Crédit</th><th>Client</th><th>Secteur</th><th class="montant">Décaissé</th><th class="montant">Reste dû</th><th>Décaissement</th><th>Statut</th></tr></thead>
+        <tbody id="liste-portefeuille"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <header><h2>Répartition par secteur</h2></header>
+    <div id="pf-repartition" class="donnees"></div>
+  </div>
+</section>

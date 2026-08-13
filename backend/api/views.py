@@ -18,6 +18,7 @@ from clients.dossier import construire_dossier
 from clients.models import ActiviteImportee, Client, DocumentDossier, Institution
 from credits.models import CreditImporte, DemandeCredit, DemandeImportee, EcheanceImportee, PaiementImporte, ProduitCredit
 from credits.rapprochement import date_observation_portefeuille, rapprocher_credit, tranche_retard
+from analyse.dossier import analyser as analyser_coeur
 from evaluation_risque.analyse_dossier import analyser_dossier
 from evaluation_risque.explicabilite import expliquer_prediction
 from evaluation_risque.predicteur import predire_risque
@@ -829,19 +830,10 @@ def dossier_instruction(requete, identifiant_demande):
         return JsonResponse({"erreur": "Demande introuvable."}, status=404)
 
     date_observation = date_observation_portefeuille()
-    prediction = predire_risque(demande.client, demande)
     return JsonResponse({
         "demande": serialiser_demande(demande),
         "client": serialiser_client(demande.client),
-        "analyse": analyser_dossier(demande, date_observation),
-        "indicateurs_experimentaux": {
-            "score_risque": prediction["score_risque"],
-            "niveau_risque": prediction["niveau_risque"],
-            "facteurs_favorables": prediction["facteurs_favorables"],
-            "points_vigilance": prediction["points_vigilance"],
-            "regles_declenchees": prediction["regles_declenchees"],
-            "avertissement": "Analyse indicative uniquement. Aucun modèle n'a été validé sur les données de l'institution.",
-        },
+        "analyse": analyser_coeur(demande, date_observation),
         "journal": [{
             "evenement": journal.type_evenement,
             "date": journal.cree_le.isoformat(),

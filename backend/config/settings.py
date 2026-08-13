@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "drf_spectacular",
     "clients",
+    "analyse",
     "credits",
     "audit",
 ]

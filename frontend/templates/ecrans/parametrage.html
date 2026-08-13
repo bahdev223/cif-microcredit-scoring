@@ -1,0 +1,42 @@
+<section id="produits" class="vue vue-masque">
+  <div class="section">
+    <header>
+      <h2>Produits de crédit</h2>
+      <button id="nouveau-produit" class="bouton-principal" type="button">Ajouter un produit</button>
+    </header>
+    <p class="sous-titre" style="margin-bottom:16px">Chaque institution définit ses propres produits. Aucun n'est livré par défaut.</p>
+    <div class="tableau-wrap">
+      <table class="donnees-tableau">
+        <thead><tr><th>Code</th><th>Libellé</th><th class="montant">Montants</th><th>Durées</th><th>Secteurs visés</th><th></th></tr></thead>
+        <tbody id="liste-produits"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="regles" class="vue vue-masque">
+  <div class="section">
+    <header>
+      <h2>Règles d'analyse</h2>
+      <span class="badge">Expérimental</span>
+    </header>
+    <div id="avertissement-regles" style="margin-bottom:16px"></div>
+    <div class="tableau-wrap">
+      <table class="donnees-tableau">
+        <thead><tr><th>Code</th><th>Règle</th><th>Ce qu'elle observe</th><th>Seuils appliqués</th><th>État</th></tr></thead>
+        <tbody id="liste-regles"></tbody>
+      </table>
+    </div>
+    <p class="sous-titre" style="margin-top:14px">Ce tableau est lu depuis le catalogue qui sert réellement au calcul : ce qui est affiché est ce qui est appliqué.</p>
+  </div>
+</section>
+
+<section id="institution" class="vue vue-masque">
+  <div class="section">
+    <header>
+      <h2>Informations de l'institution</h2>
+      <button id="modifier-institution" class="bouton-principal" type="button">Modifier</button>
+    </header>
+    <div id="detail-institution" class="donnees"></div>
+  </div>
+</section>
