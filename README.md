@@ -45,6 +45,7 @@ Ouvrir [http://127.0.0.1:8000/](http://127.0.0.1:8000/). L'écran charge Fatou a
 | Générer le monde fictif | `python simulation/generer.py` |
 | Contrôler les données | `python tests/verifier_monde.py` |
 | Contrôler le moteur de cadres | `python tests/test_cadres.py` |
+| Contrôler l'acquisition | `python tests/test_acquisition.py` |
 
 La génération écrit les CSV hors du dépôt, dans `C:\Users\hp\cif-microcredit-donnees-locales\synthetiques\` par défaut. Lancer ensuite les contrôles avant toute publication.
 

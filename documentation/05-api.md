@@ -51,6 +51,9 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/demandes-credit/an
 
 - `GET /api/clients/` : liste les 100 derniers clients ;
 - `POST /api/clients/creer/` : enregistre un client.
+- `GET /api/clients/<identifiant>/` : retourne le dossier consolidé, avec activités, demandes, crédits, échéances et paiements observés ;
+- `PUT /api/clients/<identifiant>/modifier/` : modifie les informations du client ;
+- `DELETE /api/clients/<identifiant>/supprimer/` : supprime le client lorsque ses relations le permettent.
 
 Le corps de création reprend les informations financières du client utilisées dans l'analyse : `nom_complet`, `secteur_activite`, `revenu_mensuel`, `charges_mensuelles`, `anciennete_activite_mois`, avec en complément `mensualite_dette_existante`, `nombre_retards` et `regularite_tontine` si connus.
 
@@ -59,3 +62,19 @@ Le corps de création reprend les informations financières du client utilisées
 `GET /api/demandes-credit/` retourne les 100 dernières demandes, leur client, montant, durée, score et niveau de risque.
 
 Pour analyser une nouvelle demande d'un client déjà enregistré, envoyer `identifiant_client` avec `montant_demande` et `duree_mois` à `POST /api/demandes-credit/analyser/`. Les autres champs client ne sont alors pas nécessaires et aucun doublon de client n'est créé.
+
+## Import historique
+
+Les routes d'import reçoivent un lot CSV, vérifient sa structure puis persistent les données historiques : clients, activités, demandes source, crédits, échéances et paiements.
+
+- `GET /api/imports-csv/lots/` : référentiel des fichiers attendus ;
+- `POST /api/imports-csv/valider/` : lecture, contrôle de format, colonnes, types et relations ;
+- `POST /api/imports-csv/confirmer/` : import après validation.
+
+Ces routes n'encaisseront jamais un paiement et ne décaissent jamais un crédit. Elles servent à acquérir et observer l'historique fourni par le système existant.
+
+## API d'ingestion cible — non livrée
+
+La future API d'intégration pourra exposer un lot canonique, par exemple `POST /api/v1/ingestion/lots/`, ou des ressources telles que `clients`, `activites`, `demandes`, `credits`, `echeances` et `paiements`.
+
+Cette notation est une intention d'architecture, pas une route actuellement disponible. Avant implémentation, le contrat devra être défini dans `15-schema-canonique-v1.md`. Chaque requête devra suivre le pipeline commun : mapping, validation de schéma, validation relationnelle, Data Quality, normalisation, aperçu puis persistance. Aucun endpoint ne doit écrire directement dans la base en contournant ces étapes.

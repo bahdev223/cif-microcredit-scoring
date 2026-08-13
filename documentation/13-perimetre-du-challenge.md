@@ -70,3 +70,21 @@ La distinction tient en une phrase : le système **observe, importe et structure
 | C — API | prévue, non développée | connecter le système d'information plus tard |
 
 Aucun connecteur spécifique ne sera écrit avant de savoir ce que l'institution utilise réellement.
+
+## Principe de non-substitution
+
+La plateforme reçoit et analyse les données historiques, elle ne prend pas la place du système transactionnel de l'institution.
+
+| La plateforme CIF fait | Le système de microfinance fait |
+| --- | --- |
+| importe crédits, échéances, paiements et retards | décaisse le crédit et encaisse les paiements |
+| contrôle la qualité, rapproche les dossiers et construit les variables | produit les écritures, reçus et mouvements de caisse |
+| explique le risque et conserve la trace de l'analyse | gère les opérations, la comptabilité et les clôtures |
+
+La collecte interne documente la situation actuelle T0 ; l'import historique documente le passé. Les deux sources sont rapprochées logiquement, sans effacement ni confusion de provenance.
+
+## Minimisation et séparation des rôles
+
+Le prototype collecte le minimum utile pour rattacher un dossier et analyser le risque. L'identification technique repose d'abord sur le couple `institution_id` + `client_id_source`, pas sur le nom.
+
+Les identifiants et données personnelles ne sont pas des features par défaut. Religion, ethnie, opinion politique, orientation sexuelle, contacts téléphoniques, SMS, réseaux sociaux, historique web, géolocalisation permanente et images non nécessaires sont hors périmètre. Toute donnée sans justification claire pour l'opération concernée ne doit pas être collectée.

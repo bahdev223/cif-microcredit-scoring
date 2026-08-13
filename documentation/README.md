@@ -15,5 +15,9 @@ Ce dossier rassemble la référence fonctionnelle, technique et data du prototyp
 | `09-exploitation-v1.md` | rôles, Docker, Swagger et exploitation de la V1 |
 | `10-guide-agents.md` | contrat de collaboration et garde-fous anti-régression |
 | `11-prompts-agents.md` | prompts prêts à copier pour les agents spécialisés |
+| `12-guide-entretien-terrain.md` | questions à poser aux institutions avant toute intégration |
+| `13-perimetre-du-challenge.md` | frontières produit : analyse et acquisition, jamais core banking |
+| `14-acquisition-et-dossier-consolide.md` | collecte interne, import historique et feuille de route d'acquisition |
+| `15-schema-canonique-v1.md` | contrat minimal des données et gouvernance des variables |
 
 Pour démarrer sans contexte, lire d'abord le guide technique, puis le guide de démonstration.
