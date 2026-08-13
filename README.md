@@ -16,6 +16,8 @@ Cette frontière est ce qui empêche le projet de devenir une accumulation de ca
 | Moteur de règles | interprète les résultats selon des seuils appartenant à l'institution | en place |
 | Modèle statistique | appris sur l'historique, produit une probabilité de défaut | non construit |
 
+Une seconde règle borne le périmètre : **si une fonctionnalité ne sert pas directement à acquérir, comprendre, nettoyer, transformer, scorer, expliquer ou surveiller les données de risque de crédit, elle n'entre pas dans le prototype**. Le détail est dans le [périmètre du challenge](documentation/13-perimetre-du-challenge.md).
+
 ## Démarrage rapide
 
 Prérequis : Python 3.12 ou plus récent et Git.
@@ -73,4 +75,5 @@ Le détail est dans le [guide technique de l'environnement](documentation/08-gui
 - [Dictionnaire des données synthétiques](documentation/07-dictionnaire-donnees-synthetiques.md)
 - [Guide technique : installation, exécution et structure](documentation/08-guide-technique-environnement.md)
 - [Guide d'entretien terrain](documentation/12-guide-entretien-terrain.md)
+- [Périmètre du challenge](documentation/13-perimetre-du-challenge.md)
 - [Données fictives](donnees/README.md)
