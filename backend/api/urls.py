@@ -6,6 +6,7 @@ from .views import (
     enregistrer_institution,
     etat_service,
     lire_institution,
+    liste_lots_import,
     liste_clients,
     liste_demandes_credit,
     valider_import_csv,
@@ -21,6 +22,7 @@ urlpatterns = [
     path("clients/<int:identifiant_client>/", detail_client, name="detail-client"),
     path("demandes-credit/", liste_demandes_credit, name="liste-demandes-credit"),
     path("imports-csv/valider/", valider_import_csv, name="valider-import-csv"),
+    path("imports-csv/lots/", liste_lots_import, name="liste-lots-import"),
     path("imports-csv/confirmer/", confirmer_import_csv, name="confirmer-import-csv"),
     path("demandes-credit/analyser/", analyser_demande_credit, name="analyser-demande-credit"),
 ]

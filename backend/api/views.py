@@ -1,6 +1,7 @@
 import json
 import csv
 from io import StringIO
+from pathlib import Path
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -20,6 +21,19 @@ FICHIERS_IMPORT = {
     "echeances.csv": {"identifiant_echeance", "identifiant_credit", "identifiant_institution"},
     "paiements.csv": {"identifiant_paiement", "identifiant_credit", "identifiant_echeance", "identifiant_institution"},
 }
+
+RACINE_PROJET = Path(__file__).resolve().parents[2]
+REPERTOIRE_LOTS = RACINE_PROJET / "donnees" / "synthetiques"
+
+
+@require_GET
+def liste_lots_import(requete):
+    lots = []
+    for dossier in sorted(REPERTOIRE_LOTS.glob("institution_*")):
+        fichiers = {chemin.name for chemin in dossier.glob("*.csv")}
+        if set(FICHIERS_IMPORT).issubset(fichiers):
+            lots.append({"code": dossier.name, "libelle": dossier.name.replace("_", " ").title()})
+    return JsonResponse({"lots": lots, "fichiers_attendus": sorted(FICHIERS_IMPORT)})
 
 
 def lire_csv_importe(fichier):
