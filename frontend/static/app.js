@@ -22,6 +22,7 @@ const casFatou = {
 
 const champs = Object.keys(casFatou);
 let identifiantClientSelectionne = null;
+let fichiersLotImport = [];
 const formaterMontant = (valeur) => `${new Intl.NumberFormat('fr-FR').format(Math.round(valeur))} FCFA`;
 const valeur = (identifiant) => Number(document.querySelector(`#${identifiant}`).value) || 0;
 
@@ -234,6 +235,79 @@ document.querySelector('#formulaire-institution').addEventListener('submit', asy
   }
 });
 document.querySelector('#actualiser-listes').addEventListener('click', chargerListes);
+
+function formaterRapportImport(rapport) {
+  const element = document.querySelector('#rapport-import');
+  element.replaceChildren();
+  element.className = `rapport-import ${rapport.valide ? 'succes' : 'erreur'}`;
+  const titre = document.createElement('h3');
+  titre.textContent = rapport.valide ? `Lot valide — qualité : ${rapport.qualite} %` : `Lot à corriger — qualité : ${rapport.qualite} %`;
+  element.appendChild(titre);
+  const resume = document.createElement('p');
+  resume.textContent = `${rapport.total_lignes} lignes détectées.`;
+  element.appendChild(resume);
+  const liste = document.createElement('ul');
+  Object.entries(rapport.lignes || {}).forEach(([nom, nombre]) => {
+    const ligne = document.createElement('li');
+    ligne.textContent = `✓ ${nom} : ${nombre} lignes`;
+    liste.appendChild(ligne);
+  });
+  (rapport.avertissements || []).forEach((avertissement) => {
+    const ligne = document.createElement('li');
+    ligne.textContent = `⚠ ${avertissement}`;
+    liste.appendChild(ligne);
+  });
+  (rapport.erreurs || []).forEach((erreur) => {
+    const ligne = document.createElement('li');
+    ligne.textContent = `✕ ${erreur}`;
+    liste.appendChild(ligne);
+  });
+  element.appendChild(liste);
+  element.classList.remove('masque');
+  document.querySelector('#confirmer-import').classList.toggle('masque', !rapport.valide);
+}
+
+async function validerLotImport(fichiers) {
+  fichiersLotImport = [...fichiers];
+  const donnees = new FormData();
+  fichiersLotImport.forEach((fichier) => donnees.append('fichiers', fichier));
+  try {
+    const reponse = await fetch('/api/imports-csv/valider/', { method: 'POST', body: donnees });
+    const rapport = await reponse.json();
+    if (!reponse.ok) throw new Error(rapport.erreur || 'Validation impossible.');
+    formaterRapportImport(rapport);
+  } catch (erreur) {
+    formaterRapportImport({ valide: false, qualite: 0, erreurs: [erreur.message], avertissements: [], lignes: {}, total_lignes: 0 });
+  }
+}
+
+const champLot = document.querySelector('#fichiers-institution');
+champLot.addEventListener('change', () => validerLotImport(champLot.files));
+const zoneLot = document.querySelector('#import-lot .zone-depot');
+['dragenter', 'dragover'].forEach((type) => zoneLot.addEventListener(type, (evenement) => {
+  evenement.preventDefault();
+  zoneLot.classList.add('survol');
+}));
+['dragleave', 'drop'].forEach((type) => zoneLot.addEventListener(type, (evenement) => {
+  evenement.preventDefault();
+  zoneLot.classList.remove('survol');
+}));
+zoneLot.addEventListener('drop', (evenement) => validerLotImport(evenement.dataTransfer.files));
+document.querySelector('#confirmer-import').addEventListener('click', async () => {
+  const donnees = new FormData();
+  fichiersLotImport.forEach((fichier) => donnees.append('fichiers', fichier));
+  try {
+    const reponse = await fetch('/api/imports-csv/confirmer/', { method: 'POST', body: donnees });
+    const resultat = await reponse.json();
+    if (!reponse.ok) throw new Error(resultat.erreur || 'Import impossible.');
+    document.querySelector('#rapport-import').className = 'rapport-import succes';
+    document.querySelector('#rapport-import').textContent = `Import confirmé : ${resultat.clients_ajoutes} clients ajoutés. ${resultat.total_lignes} lignes ont été contrôlées.`;
+    document.querySelector('#confirmer-import').classList.add('masque');
+    chargerListes();
+  } catch (erreur) {
+    alert(`Import impossible : ${erreur.message}`);
+  }
+});
 
 document.querySelector('#recharger-cas').addEventListener('click', () => {
   identifiantClientSelectionne = null;

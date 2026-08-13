@@ -1,0 +1,8 @@
+identifiant_credit,identifiant_demande,identifiant_institution,date_decaissement,montant_decaisse,duree_mois,type_amortissement,differe_mois,echeance_theorique,date_premiere_echeance,date_derniere_echeance_prevue
+CRD-000039,DEM-000050,INS-002,2021-04-08,160000,9,mensuel_constant,0,17777,2021-05-08,2022-01-08
+CRD-000040,DEM-000051,INS-002,2022-02-28,250000,3,mensuel_constant,0,83333,2022-03-28,2022-05-28
+CRD-000041,DEM-000052,INS-002,2021-01-21,665000,6,differe_puis_mensuel,4,110833,2021-06-21,2021-11-21
+CRD-000042,DEM-000053,INS-002,2021-09-01,125000,6,mensuel_constant,0,20833,2021-10-01,2022-03-01
+CRD-000043,DEM-000054,INS-002,2022-09-13,200000,9,differe_puis_mensuel,5,22222,2023-03-13,2023-11-13
+CRD-000044,DEM-000055,INS-002,2021-10-29,420000,12,differe_puis_mensuel,4,35000,2022-03-29,2023-02-28
+CRD-000045,DEM-000056,INS-002,2022-11-26,660000,12,mensuel_constant,0,55000,2022-12-26,2023-11-26

@@ -3,10 +3,6 @@ Thumbs.db
 .vscode/
 *.sqlite3
 donnees/temporaires/
-donnees/synthetiques/brutes/
-donnees/synthetiques/traitees/
-donnees/synthetiques/variables/
-donnees/synthetiques/verite/
 donnees-locales/
 __pycache__/
 *.pyc

@@ -54,6 +54,19 @@
         <p id="message-institution" class="aide"></p>
       </section>
 
+      <section class="carte" id="import-lot">
+        <p class="surtitre">Importer des données d'institution</p>
+        <h2>Contrôler un lot CSV avant l'import</h2>
+        <label for="fichiers-institution" class="zone-depot">
+          <strong>Glissez les six fichiers CSV ici</strong>
+          <span>ou cliquez pour sélectionner plusieurs fichiers</span>
+        </label>
+        <input id="fichiers-institution" class="visuellement-masque" type="file" accept=".csv,text/csv" multiple />
+        <p class="aide">Fichiers attendus : <code>clients.csv</code>, <code>activites.csv</code>, <code>demandes_credit.csv</code>, <code>credits.csv</code>, <code>echeances.csv</code>, <code>paiements.csv</code>.</p>
+        <section id="rapport-import" class="rapport-import masque" aria-live="polite"></section>
+        <button id="confirmer-import" class="bouton-principal masque" type="button">Confirmer l'import</button>
+      </section>
+
       <section class="carte bandeau-cas">
         <div>
           <strong>Cas pédagogique prérempli</strong>
