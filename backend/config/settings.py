@@ -17,6 +17,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "clients",
     "analyse",
+    "cadres",
     "credits",
     "audit",
 ]

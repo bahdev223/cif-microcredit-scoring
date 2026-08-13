@@ -4,6 +4,18 @@ Prototype Django d'aide à la décision pour les agents de microfinance. Il perm
 
 > Les données et résultats sont pédagogiques et fictifs. Ne pas utiliser ce prototype pour accorder ou refuser un crédit réel.
 
+## Règle d'architecture
+
+> **Le moteur de calcul ne connaît aucun secteur d'activité, aucun produit de crédit et aucune politique d'octroi. Il exécute uniquement des cadres d'analyse versionnés et configurés par l'institution.**
+
+Cette frontière est ce qui empêche le projet de devenir une accumulation de cas particuliers. Une méthode d'analyse n'est jamais écrite dans le code : elle est décrite par l'institution sous forme de rubriques, de formules et de règles, puis exécutée telle quelle. Trois couches restent séparées :
+
+| Couche | Nature | État |
+| --- | --- | --- |
+| Moteur de calcul | déterministe : mêmes valeurs et même cadre donnent le même résultat | en place |
+| Moteur de règles | interprète les résultats selon des seuils appartenant à l'institution | en place |
+| Modèle statistique | appris sur l'historique, produit une probabilité de défaut | non construit |
+
 ## Démarrage rapide
 
 Prérequis : Python 3.12 ou plus récent et Git.
@@ -30,13 +42,14 @@ Ouvrir [http://127.0.0.1:8000/](http://127.0.0.1:8000/). L'écran charge Fatou a
 | Administrer les dossiers | [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/) |
 | Générer le monde fictif | `python simulation/generer.py` |
 | Contrôler les données | `python tests/verifier_monde.py` |
+| Contrôler le moteur de cadres | `python tests/test_cadres.py` |
 
 La génération écrit les CSV hors du dépôt, dans `C:\Users\hp\cif-microcredit-donnees-locales\synthetiques\` par défaut. Lancer ensuite les contrôles avant toute publication.
 
 ## Organisation
 
 ```text
-backend/          application Django, API, règles et audit
+backend/          application Django, API, cadres d'analyse, moteurs et audit
 frontend/         écran de démonstration, styles et JavaScript
 donnees/          échantillons, données synthétiques et publiques
 simulation/       configuration et générateur du monde fictif
@@ -59,4 +72,5 @@ Le détail est dans le [guide technique de l'environnement](documentation/08-gui
 - [Laboratoire synthétique](documentation/06-laboratoire-synthetique.md)
 - [Dictionnaire des données synthétiques](documentation/07-dictionnaire-donnees-synthetiques.md)
 - [Guide technique : installation, exécution et structure](documentation/08-guide-technique-environnement.md)
+- [Guide d'entretien terrain](documentation/12-guide-entretien-terrain.md)
 - [Données fictives](donnees/README.md)
