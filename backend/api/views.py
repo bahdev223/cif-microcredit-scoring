@@ -374,6 +374,7 @@ def liste_demandes_credit(requete):
     demandes = DemandeCredit.objects.select_related("client").order_by("-cree_le")[:100]
     return JsonResponse({"demandes": [{
         "identifiant": demande.id,
+        "identifiant_client": demande.client_id,
         "client": demande.client.nom_complet,
         "montant_demande": demande.montant_demande,
         "duree_mois": demande.duree_mois,
