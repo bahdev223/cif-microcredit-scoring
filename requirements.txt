@@ -1,5 +1,12 @@
+# Dépendances installées par chaque membre de l'équipe :
+#   python -m pip install -r requirements.txt
+# Toute nouvelle dépendance doit être ajoutée ici avec une version exacte avant commit.
+
+# Application web et documentation automatique de l'API
 Django==5.2.11
 drf-spectacular==0.28.0
+
+# Simulation, traitement de données et laboratoires
 PyYAML==6.0.3
 pandas==2.3.3
 scikit-learn==1.8.0
