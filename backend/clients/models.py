@@ -13,6 +13,8 @@ class Institution(models.Model):
 
 
 class Client(models.Model):
+    identifiant_source = models.CharField(max_length=40, blank=True, unique=True, null=True)
+    identifiant_institution_source = models.CharField(max_length=30, blank=True)
     nom_complet = models.CharField(max_length=160)
     secteur_activite = models.CharField(max_length=80)
     revenu_mensuel = models.PositiveIntegerField()

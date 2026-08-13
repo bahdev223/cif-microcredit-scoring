@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     analyser_demande_credit,
     creer_client,
+    detail_client,
     enregistrer_institution,
     etat_service,
     lire_institution,
@@ -17,6 +18,7 @@ urlpatterns = [
     path("institution/enregistrer/", enregistrer_institution, name="enregistrer-institution"),
     path("clients/", liste_clients, name="liste-clients"),
     path("clients/creer/", creer_client, name="creer-client"),
+    path("clients/<int:identifiant_client>/", detail_client, name="detail-client"),
     path("demandes-credit/", liste_demandes_credit, name="liste-demandes-credit"),
     path("imports-csv/valider/", valider_import_csv, name="valider-import-csv"),
     path("imports-csv/confirmer/", confirmer_import_csv, name="confirmer-import-csv"),

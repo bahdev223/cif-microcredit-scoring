@@ -23,6 +23,7 @@ const casFatou = {
 const champs = Object.keys(casFatou);
 let identifiantClientSelectionne = null;
 let fichiersLotImport = [];
+let dernierRapportImport = null;
 const formaterMontant = (valeur) => `${new Intl.NumberFormat('fr-FR').format(Math.round(valeur))} FCFA`;
 const valeur = (identifiant) => Number(document.querySelector(`#${identifiant}`).value) || 0;
 
@@ -166,6 +167,7 @@ function afficherClients(clients) {
         chargerDossier({ ...client, objet_credit: 'Besoin de fonds de roulement', montant_demande: 100000, duree_mois: 12, chiffre_affaires: client.revenu_mensuel, achats_marchandises: 0, loyer_activite: 0, transport_activite: 0, autres_charges_activite: 0, alimentation: client.charges_mensuelles, logement: 0, transport_personnel: 0, autres_depenses_menage: 0, credits_termines: 0 });
         identifiantClientSelectionne = client.identifiant;
         document.querySelector('#message-chargement').textContent = `Client « ${client.nom_complet} » sélectionné : la prochaine analyse créera une nouvelle demande pour ce client.`;
+        afficherFicheClient(client.identifiant);
       });
     }
     element.appendChild(bouton);
@@ -183,6 +185,25 @@ function afficherDemandes(demandes) {
     liste.appendChild(element);
   });
 }
+
+async function afficherFicheClient(identifiant) {
+  try {
+    const contenu = await appelJson(`/api/clients/${identifiant}/`);
+    document.querySelector('#fiche-client-nom').textContent = contenu.client.nom_complet;
+    document.querySelector('#fiche-client-resume').textContent = `${contenu.client.secteur_activite} · ancienneté ${contenu.client.anciennete_activite_mois} mois · ${contenu.credits.length} crédit(s) importé(s).`;
+    const historique = document.querySelector('#fiche-client-historique');
+    historique.replaceChildren();
+    if (!contenu.credits.length) historique.textContent = 'Aucun historique importé pour ce client.';
+    contenu.credits.forEach((credit) => {
+      const bloc = document.createElement('article');
+      bloc.className = 'historique-credit';
+      bloc.innerHTML = `<h3>Crédit ${credit.identifiant} — ${formaterMontant(credit.montant)} sur ${credit.duree_mois} mois</h3><ul><li>Échéances : ${credit.echeances.length}</li><li>Paiements : ${credit.paiements.length}</li></ul><details><summary>Voir les échéances et paiements</summary><p>Échéances : ${credit.echeances.map((e) => `${e.numero} · ${e.date} · ${formaterMontant(e.montant)}`).join(' | ') || 'aucune'}</p><p>Paiements : ${credit.paiements.map((p) => `${p.date} · ${formaterMontant(p.montant)} · ${p.canal}`).join(' | ') || 'aucun'}</p></details>`;
+      historique.appendChild(bloc);
+    });
+    document.querySelector('#fiche-client').classList.remove('masque');
+  } catch (erreur) { alert(`Impossible d'ouvrir la fiche client : ${erreur.message}`); }
+}
+document.querySelector('#fermer-fiche-client').addEventListener('click', () => document.querySelector('#fiche-client').classList.add('masque'));
 
 async function chargerListes() {
   try {
@@ -237,6 +258,7 @@ document.querySelector('#formulaire-institution').addEventListener('submit', asy
 document.querySelector('#actualiser-listes').addEventListener('click', chargerListes);
 
 function formaterRapportImport(rapport) {
+  dernierRapportImport = rapport;
   const element = document.querySelector('#rapport-import');
   element.replaceChildren();
   element.className = `rapport-import ${rapport.valide ? 'succes' : 'erreur'}`;
@@ -265,7 +287,18 @@ function formaterRapportImport(rapport) {
   element.appendChild(liste);
   element.classList.remove('masque');
   document.querySelector('#confirmer-import').classList.toggle('masque', !rapport.valide);
+  document.querySelector('#voir-anomalies').classList.toggle('masque', !(rapport.anomalies || []).length);
 }
+
+document.querySelector('#voir-anomalies').addEventListener('click', () => {
+  const element = document.querySelector('#rapport-import');
+  element.querySelector('.details-anomalies')?.remove();
+  const details = document.createElement('details');
+  details.className = 'details-anomalies';
+  details.open = true;
+  details.innerHTML = `<summary>Anomalies détectées (${(dernierRapportImport?.anomalies || []).length})</summary><ul>${(dernierRapportImport?.anomalies || []).map((a) => `<li><strong>${a.fichier}</strong>, ligne ${a.ligne} : ${a.type} — ${a.detail}</li>`).join('') || '<li>Aucune anomalie détaillée.</li>'}</ul>`;
+  element.appendChild(details);
+});
 
 async function validerLotImport(fichiers) {
   fichiersLotImport = [...fichiers];

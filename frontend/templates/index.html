@@ -57,6 +57,15 @@
       <section class="carte" id="import-lot">
         <p class="surtitre">Importer des données d'institution</p>
         <h2>Contrôler un lot CSV avant l'import</h2>
+        <label>Institution source
+          <select id="institution-source">
+            <option value="institution_01">Institution 01 — commerce urbain</option>
+            <option value="institution_02">Institution 02 — agriculture rurale</option>
+            <option value="institution_03">Institution 03 — artisans et TPE</option>
+            <option value="institution_04">Institution 04 — généraliste</option>
+            <option value="institution_05">Institution 05 — portefeuille complexe</option>
+          </select>
+        </label>
         <label for="fichiers-institution" class="zone-depot">
           <strong>Glissez les six fichiers CSV ici</strong>
           <span>ou cliquez pour sélectionner plusieurs fichiers</span>
@@ -64,7 +73,14 @@
         <input id="fichiers-institution" class="visuellement-masque" type="file" accept=".csv,text/csv" multiple />
         <p class="aide">Fichiers attendus : <code>clients.csv</code>, <code>activites.csv</code>, <code>demandes_credit.csv</code>, <code>credits.csv</code>, <code>echeances.csv</code>, <code>paiements.csv</code>.</p>
         <section id="rapport-import" class="rapport-import masque" aria-live="polite"></section>
+        <button id="voir-anomalies" class="secondaire masque" type="button">Voir les anomalies</button>
         <button id="confirmer-import" class="bouton-principal masque" type="button">Confirmer l'import</button>
+      </section>
+
+      <section id="fiche-client" class="carte masque" aria-live="polite">
+        <div class="titre-section"><div><p class="surtitre">Fiche client</p><h2 id="fiche-client-nom">Client</h2></div><button id="fermer-fiche-client" class="secondaire" type="button">Fermer</button></div>
+        <p id="fiche-client-resume" class="aide"></p>
+        <div id="fiche-client-historique"></div>
       </section>
 
       <section class="carte bandeau-cas">
