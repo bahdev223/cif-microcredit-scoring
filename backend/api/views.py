@@ -19,6 +19,7 @@ from credits.rapprochement import date_observation_portefeuille, rapprocher_cred
 from evaluation_risque.analyse_dossier import analyser_dossier
 from evaluation_risque.explicabilite import expliquer_prediction
 from evaluation_risque.predicteur import predire_risque
+from evaluation_risque.regles import CATALOGUE_REGLES
 
 FICHIERS_IMPORT = {
     "clients.csv": {"identifiant_client", "identifiant_institution", "code_secteur_principal", "anciennete_activite_mois_a_entree"},
@@ -360,11 +361,43 @@ def liste_remboursements(requete):
                          "pagination": {"page": page.number, "pages": page.paginator.num_pages, "total": page.paginator.count}})
 
 
+LIBELLES_AUDIT = {
+    "ANALYSE_PRELIMINAIRE_EFFECTUEE": "Analyse préliminaire effectuée",
+    "ANALYSE_RISQUE_EFFECTUEE": "Analyse préliminaire effectuée",
+    "SIMULATION_APPLIQUEE": "Simulation appliquée au dossier",
+    "DECISION_ENREGISTREE": "Décision enregistrée",
+}
+
+
+def resumer_evenement_audit(journal):
+    """Phrase lisible décrivant ce qui s'est passé, à partir du contenu tracé."""
+    contenu = journal.contenu or {}
+    if journal.type_evenement == "SIMULATION_APPLIQUEE":
+        avant, apres = contenu.get("avant", {}), contenu.get("apres", {})
+        return (f"{avant.get('montant', '?')} F sur {avant.get('duree_mois', '?')} mois "
+                f"→ {apres.get('montant', '?')} F sur {apres.get('duree_mois', '?')} mois")
+    if journal.type_evenement == "DECISION_ENREGISTREE":
+        motif = contenu.get("motif") or "sans motif renseigné"
+        return f"{contenu.get('decision', '')} — {motif}"
+    prediction = contenu.get("prediction") or {}
+    if prediction:
+        return f"Indicateur {prediction.get('score_risque')} / 100 · niveau {prediction.get('niveau_risque')}"
+    return ""
+
+
 @require_GET
 def liste_audit(requete):
-    page = Paginator(JournalAudit.objects.select_related("demande_credit__client").order_by("-cree_le"), int(requete.GET.get("taille", 20))).get_page(requete.GET.get("page", 1))
-    return JsonResponse({"resultats": [{"evenement": j.type_evenement, "client": j.demande_credit.client.nom_complet, "date": j.cree_le.isoformat()} for j in page],
-                         "pagination": {"page": page.number, "pages": page.paginator.num_pages, "total": page.paginator.count}})
+    page = Paginator(JournalAudit.objects.select_related("demande_credit__client").order_by("-cree_le"), int(requete.GET.get("taille", 30))).get_page(requete.GET.get("page", 1))
+    return JsonResponse({"resultats": [{
+        "evenement": LIBELLES_AUDIT.get(journal.type_evenement, journal.type_evenement),
+        "code_evenement": journal.type_evenement,
+        "client": journal.demande_credit.client.nom_complet,
+        "identifiant_client": journal.demande_credit.client_id,
+        "reference_demande": f"DEM-{journal.demande_credit_id:05d}",
+        "detail": resumer_evenement_audit(journal),
+        "date": journal.cree_le.isoformat(),
+    } for journal in page],
+        "pagination": {"page": page.number, "pages": page.paginator.num_pages, "total": page.paginator.count}})
 
 
 @csrf_exempt
@@ -463,6 +496,173 @@ def enregistrer_institution(requete):
     except (KeyError, TypeError, ValueError) as erreur:
         return JsonResponse({"erreur": f"Données invalides : {erreur}"}, status=400)
     return JsonResponse({"institution": {"nom": institution.nom, "sigle": institution.sigle, "ville": institution.ville, "pays": institution.pays}})
+
+
+@require_GET
+def liste_regles_analyse(requete):
+    """Rend visibles les règles réellement appliquées par l'analyse préliminaire."""
+    return JsonResponse({
+        "regles": list(CATALOGUE_REGLES),
+        "avertissement": "Règles expérimentales. Les seuils sont pédagogiques et n'ont été validés par aucune institution.",
+    })
+
+
+@require_GET
+def vue_portefeuille(requete):
+    """Portefeuille filtrable, avec des indicateurs strictement descriptifs.
+
+    Les filtres proposés sont ceux que les données permettent réellement.
+    L'agence et le produit ne sont pas encore portés par les crédits importés :
+    ils sont annoncés comme indisponibles plutôt que proposés à vide.
+    """
+    date_observation = date_observation_portefeuille()
+    secteur = requete.GET.get("secteur", "")
+    statut_demande = requete.GET.get("statut", "")
+    annee = requete.GET.get("annee", "")
+
+    credits = CreditImporte.objects.select_related("client").prefetch_related("echeances", "paiements")
+    if secteur:
+        credits = credits.filter(client__secteur_activite=secteur)
+    if annee:
+        credits = credits.filter(date_decaissement__year=annee)
+
+    lignes = []
+    for credit in credits:
+        rapprochement = rapprocher_credit(credit, date_observation)
+        if statut_demande and rapprochement["statut"] != statut_demande:
+            continue
+        rapprochement["client"] = credit.client.nom_complet
+        rapprochement["identifiant_client"] = credit.client_id
+        rapprochement["secteur"] = credit.client.secteur_activite
+        lignes.append(rapprochement)
+
+    lignes.sort(key=lambda ligne: ligne["date_decaissement"], reverse=True)
+    repartition_secteur = {}
+    for ligne in lignes:
+        entree = repartition_secteur.setdefault(ligne["secteur"], {"nombre": 0, "encours": 0})
+        entree["nombre"] += 1
+        entree["encours"] += ligne["reste_du"]
+
+    return JsonResponse({
+        "date_observation": date_observation.isoformat(),
+        "indicateurs": {
+            "credits": len(lignes),
+            "credits_actifs": sum(1 for l in lignes if l["statut"] in ("EN_COURS", "EN_RETARD")),
+            "montant_decaisse": sum(l["montant_decaisse"] for l in lignes),
+            "encours": sum(l["reste_du"] for l in lignes),
+            "montant_rembourse": sum(l["total_paye"] for l in lignes),
+            "credits_en_retard": sum(1 for l in lignes if l["statut"] == "EN_RETARD"),
+        },
+        "repartition_secteur": [
+            {"libelle": libelle, **valeurs}
+            for libelle, valeurs in sorted(repartition_secteur.items(), key=lambda couple: -couple[1]["nombre"])
+        ],
+        "credits": [{
+            "identifiant": ligne["identifiant"],
+            "identifiant_client": ligne["identifiant_client"],
+            "client": ligne["client"],
+            "secteur": ligne["secteur"],
+            "montant_decaisse": ligne["montant_decaisse"],
+            "reste_du": ligne["reste_du"],
+            "date_decaissement": ligne["date_decaissement"],
+            "duree_mois": ligne["duree_mois"],
+            "statut": ligne["statut"],
+            "jours_retard_max": ligne["jours_retard_max"],
+        } for ligne in lignes[:200]],
+        "filtres": {
+            "secteurs": sorted({valeur for valeur in Client.objects.values_list("secteur_activite", flat=True) if valeur}),
+            "annees": sorted({date.year for date in CreditImporte.objects.values_list("date_decaissement", flat=True) if date}, reverse=True),
+            "statuts": ["EN_COURS", "EN_RETARD", "SOLDE", "SOLDE_AVEC_RETARD", "SANS_ECHEANCIER"],
+            "indisponibles": ["Agence", "Produit de crédit"],
+        },
+    })
+
+
+@require_GET
+def vue_retards(requete):
+    """Échéances échues et non soldées, de la plus ancienne à la plus récente."""
+    date_observation = date_observation_portefeuille()
+    credits = CreditImporte.objects.select_related("client").prefetch_related("echeances", "paiements")
+
+    impayes = []
+    for credit in credits:
+        rapprochement = rapprocher_credit(credit, date_observation)
+        for echeance in rapprochement["echeances"]:
+            if echeance["en_retard"]:
+                impayes.append({
+                    "identifiant_credit": rapprochement["identifiant"],
+                    "identifiant_client": credit.client_id,
+                    "client": credit.client.nom_complet,
+                    "numero_echeance": echeance["numero"],
+                    "date_exigible": echeance["date_exigible"],
+                    "montant_du": echeance["montant_du"],
+                    "montant_couvert": echeance["montant_couvert"],
+                    "reste_du": echeance["reste_du"],
+                    "jours_retard": echeance["jours_retard"],
+                    "tranche": tranche_retard(echeance["jours_retard"]),
+                })
+
+    impayes.sort(key=lambda ligne: -ligne["jours_retard"])
+    tranches = {}
+    for impaye in impayes:
+        entree = tranches.setdefault(impaye["tranche"], {"nombre": 0, "montant": 0})
+        entree["nombre"] += 1
+        entree["montant"] += impaye["reste_du"]
+
+    return JsonResponse({
+        "date_observation": date_observation.isoformat(),
+        "indicateurs": {
+            "echeances_en_retard": len(impayes),
+            "montant_en_retard": sum(ligne["reste_du"] for ligne in impayes),
+            "clients_concernes": len({ligne["identifiant_client"] for ligne in impayes}),
+            "credits_concernes": len({ligne["identifiant_credit"] for ligne in impayes}),
+        },
+        "tranches": [{"libelle": libelle, **valeurs} for libelle, valeurs in sorted(tranches.items())],
+        "impayes": impayes[:200],
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST", "PUT", "DELETE"])
+def gerer_produit_credit(requete, identifiant_produit=None):
+    if requete.method == "DELETE":
+        try:
+            ProduitCredit.objects.get(pk=identifiant_produit).delete()
+        except ProduitCredit.DoesNotExist:
+            return JsonResponse({"erreur": "Produit introuvable."}, status=404)
+        return JsonResponse({"message": "Produit supprimé."})
+
+    try:
+        donnees = lire_json(requete)
+        champs = {
+            "code": donnees["code"].strip().upper(),
+            "libelle": donnees["libelle"].strip(),
+            "montant_min": int(donnees.get("montant_min") or 0),
+            "montant_max": int(donnees.get("montant_max") or 0),
+            "duree_min_mois": int(donnees.get("duree_min_mois") or 0),
+            "duree_max_mois": int(donnees.get("duree_max_mois") or 0),
+            "secteurs_vises": (donnees.get("secteurs_vises") or "").strip(),
+        }
+        if champs["montant_max"] and champs["montant_max"] < champs["montant_min"]:
+            return JsonResponse({"erreur": "Le montant maximum est inférieur au montant minimum."}, status=400)
+        if champs["duree_max_mois"] and champs["duree_max_mois"] < champs["duree_min_mois"]:
+            return JsonResponse({"erreur": "La durée maximale est inférieure à la durée minimale."}, status=400)
+
+        if identifiant_produit:
+            produit = ProduitCredit.objects.get(pk=identifiant_produit)
+            for champ, valeur in champs.items():
+                setattr(produit, champ, valeur)
+            produit.save()
+        else:
+            produit = ProduitCredit.objects.create(**champs)
+    except ProduitCredit.DoesNotExist:
+        return JsonResponse({"erreur": "Produit introuvable."}, status=404)
+    except (KeyError, TypeError, ValueError) as erreur:
+        return JsonResponse({"erreur": f"Données invalides : {erreur}"}, status=400)
+    except Exception:
+        return JsonResponse({"erreur": "Ce code produit existe déjà."}, status=409)
+
+    return JsonResponse({"produit": {"identifiant": produit.id, "code": produit.code, "libelle": produit.libelle}}, status=201)
 
 
 @require_GET

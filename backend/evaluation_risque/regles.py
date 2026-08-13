@@ -1,3 +1,43 @@
+"""Règles appliquées à l'analyse préliminaire.
+
+Les seuils écrits ici sont pédagogiques. Ils n'ont été validés par aucune
+institution et ne reflètent aucune politique de crédit réelle. Le catalogue
+ci-dessous est la source unique de l'écran « Règles d'analyse » : ce que
+l'application affiche est exactement ce qu'elle applique.
+"""
+
+CATALOGUE_REGLES = (
+    {
+        "code": "R01",
+        "libelle": "Capacité de remboursement",
+        "description": "Compare la marge estimée à l'échéance estimée du crédit demandé.",
+        "seuils": "Favorable au-delà de 2 fois l'échéance, vigilance en dessous d'une fois.",
+        "active": True,
+    },
+    {
+        "code": "R02",
+        "libelle": "Ancienneté de l'activité",
+        "description": "Distingue une activité établie d'une activité récente.",
+        "seuils": "Favorable à partir de 24 mois, vigilance en dessous de 12 mois.",
+        "active": True,
+    },
+    {
+        "code": "R03",
+        "libelle": "Historique de retard",
+        "description": "Tient compte des retards déjà connus pour ce client.",
+        "seuils": "Vigilance dès un retard, renforcée au-delà de deux.",
+        "active": True,
+    },
+    {
+        "code": "R04",
+        "libelle": "Régularité des cotisations tontine",
+        "description": "Signal comportemental relevé à la saisie du dossier.",
+        "seuils": "Favorable si régulière ; l'absence d'information est signalée.",
+        "active": True,
+    },
+)
+
+
 def evaluer_regles(caracteristiques):
     score = 45
     facteurs_favorables, points_vigilance, regles_declenchees = [], [], []

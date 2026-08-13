@@ -35,32 +35,7 @@ const TITRES = {
 /* Les écrans encore à construire annoncent leur contenu et la question à poser
    à l'institution. Un écran vide serait un trou ; celui-ci est un support
    d'entretien. */
-const ECRANS_PREVUS = {
-  portefeuille: {
-    titre: "Portefeuille crédit",
-    intention: "Vue filtrable du portefeuille : agence, produit, secteur, période et statut.",
-    contenu: ["Crédits actifs, montant décaissé et encours", "Crédits récents et échéances prochaines", "Répartition par produit et par secteur"],
-    question: "Quels indicateurs utilisez-vous réellement pour piloter votre portefeuille ?",
-  },
-  retards: {
-    titre: "Retards et recouvrement",
-    intention: "Liste des échéances impayées, avec le détail de chaque crédit concerné.",
-    contenu: ["Client, crédit, montant attendu, montant payé, reste dû", "Ancienneté du retard en jours", "Historique des versements du crédit"],
-    question: "Que faites-vous concrètement lorsqu'une échéance n'est pas payée, et à partir de quand intervenez-vous ?",
-  },
-  produits: {
-    titre: "Produits de crédit",
-    intention: "Chaque institution définit ses propres produits ; rien n'est figé dans l'application.",
-    contenu: ["Libellé, montants et durées possibles", "Périodicité et mode de remboursement", "Secteurs visés et pièces exigées"],
-    question: "Qu'est-ce qui différencie réellement vos produits les uns des autres ?",
-  },
-  regles: {
-    titre: "Règles d'analyse",
-    intention: "Règles appliquées à l'analyse préliminaire, visibles et désactivables une par une.",
-    contenu: ["Complétude du dossier", "Capacité de remboursement déclarée", "Disponibilité d'un historique interne"],
-    question: "Chez vous, comment ces règles fonctionnent-elles, et lesquelles manquent ?",
-  },
-};
+const ECRANS_PREVUS = {};
 
 const LIBELLES_STATUT_CREDIT = {
   SOLDE: "Soldé",
@@ -79,6 +54,12 @@ function formaterDate(texte) {
   if (!texte) return "—";
   const [annee, mois, jour] = texte.slice(0, 10).split("-");
   return `${jour}/${mois}/${annee}`;
+}
+
+function formaterHorodatage(texte) {
+  if (!texte) return "—";
+  const moment = new Date(texte);
+  return `${formaterDate(texte)} ${String(moment.getHours()).padStart(2, "0")}:${String(moment.getMinutes()).padStart(2, "0")}`;
 }
 
 function initiales(nom) {
@@ -128,6 +109,10 @@ function ouvrir(vue) {
 
   if (vue === "clients") chargerClients();
   if (vue === "demandes") chargerDemandes();
+  if (vue === "portefeuille") chargerPortefeuille();
+  if (vue === "retards") chargerRetards();
+  if (vue === "produits") chargerProduits();
+  if (vue === "regles") chargerRegles();
   if (["credits", "remboursements", "audit"].includes(vue)) chargerListeSimple(vue);
   if (ECRANS_PREVUS[vue]) afficherEcranPrevu(vue);
 }
@@ -843,9 +828,204 @@ async function chargerListeSimple(vue) {
       ? [ligne.identifiant, ligne.client, `<span class="montant">${formaterMontant(ligne.montant)}</span>`, `${ligne.duree_mois} mois`]
       : vue === "remboursements"
         ? [ligne.identifiant, ligne.client, `<span class="montant">${formaterMontant(ligne.montant)}</span>`, formaterDate(ligne.date)]
-        : [ligne.evenement, ligne.client, formaterDate(ligne.date)];
+        : [formaterHorodatage(ligne.date), ligne.evenement, ligne.reference_demande, ligne.client, ligne.detail || "—"];
     corps.append(creer("tr", { innerHTML: cellules.map(valeur => `<td>${valeur}</td>`).join("") }));
   });
+}
+
+/* ---------- Portefeuille ---------- */
+
+let filtresPortefeuilleCharges = false;
+
+async function chargerPortefeuille() {
+  const parametres = new URLSearchParams({
+    secteur: $("#pf-filtre-secteur").value,
+    statut: $("#pf-filtre-statut").value,
+    annee: $("#pf-filtre-annee").value,
+  });
+  const donnees = await api("/api/portefeuille/?" + parametres);
+
+  if (!filtresPortefeuilleCharges) {
+    remplirFiltre("#pf-filtre-secteur", "Tous les secteurs", donnees.filtres.secteurs);
+    remplirFiltre("#pf-filtre-annee", "Toutes les périodes", donnees.filtres.annees);
+    remplirFiltre("#pf-filtre-statut", "Tous les statuts", donnees.filtres.statuts,
+      statut => LIBELLES_STATUT_CREDIT[statut] || statut);
+    $("#pf-indisponibles").textContent =
+      "Filtres indisponibles : " + donnees.filtres.indisponibles.join(", ").toLowerCase();
+    filtresPortefeuilleCharges = true;
+  }
+
+  const indicateurs = donnees.indicateurs;
+  $("#pf-credits").textContent = formaterNombre(indicateurs.credits);
+  $("#pf-credits-actifs").textContent = `${formaterNombre(indicateurs.credits_actifs)} encore actifs`;
+  $("#pf-decaisse").textContent = formaterMontant(indicateurs.montant_decaisse);
+  $("#pf-rembourse").textContent = `${formaterMontant(indicateurs.montant_rembourse)} remboursés`;
+  $("#pf-encours").textContent = formaterMontant(indicateurs.encours);
+  $("#pf-retard").textContent = formaterNombre(indicateurs.credits_en_retard);
+
+  const corps = $("#liste-portefeuille");
+  corps.replaceChildren();
+  if (!donnees.credits.length) {
+    corps.innerHTML = '<tr><td colspan="8">Aucun crédit ne correspond aux filtres.</td></tr>';
+  }
+  donnees.credits.forEach(credit => {
+    const ligne = creer("tr");
+    ligne.insertAdjacentHTML("beforeend", `
+      <td class="cellule-principale">${credit.identifiant}</td>
+      <td>${credit.client}</td>
+      <td>${credit.secteur}</td>
+      <td class="montant">${formaterMontant(credit.montant_decaisse)}</td>
+      <td class="montant">${credit.reste_du ? formaterMontant(credit.reste_du) : "—"}</td>
+      <td>${formaterDate(credit.date_decaissement)}</td>
+      <td><span class="badge-statut ${classeStatut(credit.statut)}">${LIBELLES_STATUT_CREDIT[credit.statut] || credit.statut}</span></td>
+    `);
+    const actions = creer("td", { className: "actions-tableau" });
+    const bouton = boutonAction("details", "Ouvrir le dossier client", ICONE_OEIL);
+    bouton.onclick = () => ouvrirFicheClient(credit.identifiant_client);
+    actions.append(bouton);
+    ligne.append(actions);
+    corps.append(ligne);
+  });
+
+  const repartition = $("#pf-repartition");
+  repartition.replaceChildren();
+  donnees.repartition_secteur.forEach(entree => {
+    const ligne = creer("div", { className: "ligne-repartition" });
+    ligne.append(creer("span", { textContent: entree.libelle }));
+    ligne.append(creer("strong", { textContent: `${entree.nombre} crédits · ${formaterMontant(entree.encours)} d'encours` }));
+    repartition.append(ligne);
+  });
+}
+
+function remplirFiltre(selecteur, libelleVide, valeurs, transformer = valeur => valeur) {
+  $(selecteur).replaceChildren(
+    new Option(libelleVide, ""),
+    ...valeurs.map(valeur => new Option(transformer(valeur), valeur)),
+  );
+}
+
+/* ---------- Retards ---------- */
+
+async function chargerRetards() {
+  const donnees = await api("/api/retards/");
+  const indicateurs = donnees.indicateurs;
+  $("#rt-echeances").textContent = formaterNombre(indicateurs.echeances_en_retard);
+  $("#rt-montant").textContent = formaterMontant(indicateurs.montant_en_retard);
+  $("#rt-clients").textContent = formaterNombre(indicateurs.clients_concernes);
+  $("#rt-credits").textContent = formaterNombre(indicateurs.credits_concernes);
+
+  const tranches = $("#rt-tranches");
+  tranches.replaceChildren();
+  if (!donnees.tranches.length) {
+    tranches.append(creer("p", { className: "sous-titre", textContent: "Aucune échéance en retard." }));
+  }
+  donnees.tranches.forEach(tranche => {
+    const ligne = creer("div", { className: "ligne-repartition" });
+    ligne.append(creer("span", { textContent: `Retard de ${tranche.libelle}` }));
+    ligne.append(creer("strong", { textContent: `${tranche.nombre} échéances · ${formaterMontant(tranche.montant)}` }));
+    tranches.append(ligne);
+  });
+
+  const corps = $("#liste-retards");
+  corps.replaceChildren();
+  if (!donnees.impayes.length) {
+    corps.innerHTML = '<tr><td colspan="9">Aucune échéance impayée.</td></tr>';
+  }
+  donnees.impayes.forEach(impaye => {
+    const ligne = creer("tr");
+    ligne.insertAdjacentHTML("beforeend", `
+      <td class="cellule-principale">${impaye.client}</td>
+      <td>${impaye.identifiant_credit}</td>
+      <td>n° ${impaye.numero_echeance}</td>
+      <td>${formaterDate(impaye.date_exigible)}</td>
+      <td class="montant">${formaterMontant(impaye.montant_du)}</td>
+      <td class="montant">${impaye.montant_couvert ? formaterMontant(impaye.montant_couvert) : "—"}</td>
+      <td class="montant">${formaterMontant(impaye.reste_du)}</td>
+      <td><span class="badge-statut en_retard">${impaye.jours_retard} j</span></td>
+    `);
+    const actions = creer("td", { className: "actions-tableau" });
+    const bouton = boutonAction("details", "Ouvrir le dossier client", ICONE_OEIL);
+    bouton.onclick = () => ouvrirFicheClient(impaye.identifiant_client);
+    actions.append(bouton);
+    ligne.append(actions);
+    corps.append(ligne);
+  });
+}
+
+/* ---------- Produits de crédit ---------- */
+
+async function chargerProduits() {
+  const donnees = await api("/api/produits-credit/");
+  const corps = $("#liste-produits");
+  corps.replaceChildren();
+
+  if (!donnees.produits.length) {
+    corps.innerHTML = '<tr><td colspan="6">Aucun produit configuré. Ajoutez ceux de votre institution.</td></tr>';
+    return;
+  }
+
+  donnees.produits.forEach(produit => {
+    const bornesMontant = produit.montant_max
+      ? `${formaterMontant(produit.montant_min)} à ${formaterMontant(produit.montant_max)}`
+      : "non bornés";
+    const bornesDuree = produit.duree_max_mois
+      ? `${produit.duree_min_mois} à ${produit.duree_max_mois} mois`
+      : "non bornées";
+    const ligne = creer("tr");
+    ligne.insertAdjacentHTML("beforeend", `
+      <td class="cellule-principale">${produit.code}</td>
+      <td>${produit.libelle}</td>
+      <td class="montant">${bornesMontant}</td>
+      <td>${bornesDuree}</td>
+      <td>${produit.secteurs_vises || "—"}</td>
+    `);
+    const actions = creer("td", { className: "actions-tableau" });
+    const modifier = boutonAction("modifier", "Modifier le produit", ICONE_CRAYON);
+    const supprimer = boutonAction("supprimer", "Supprimer le produit", ICONE_CORBEILLE);
+    modifier.onclick = () => ouvrirFormulaireProduit(produit);
+    supprimer.onclick = async () => {
+      if (!confirm(`Supprimer le produit « ${produit.libelle} » ?`)) return;
+      await api(`/api/produits-credit/${produit.identifiant}/`, { method: "DELETE" });
+      chargerProduits();
+    };
+    actions.append(modifier, supprimer);
+    ligne.append(actions);
+    corps.append(ligne);
+  });
+}
+
+/* ---------- Règles d'analyse ---------- */
+
+async function chargerRegles() {
+  const donnees = await api("/api/regles-analyse/");
+  $("#avertissement-regles").innerHTML = `<div class="avertissement">${donnees.avertissement}</div>`;
+
+  const corps = $("#liste-regles");
+  corps.replaceChildren();
+  donnees.regles.forEach(regle => {
+    corps.append(creer("tr", {
+      innerHTML: `
+        <td class="cellule-principale">${regle.code}</td>
+        <td>${regle.libelle}</td>
+        <td>${regle.description}</td>
+        <td>${regle.seuils}</td>
+        <td><span class="badge-statut ${regle.active ? "solde" : "en_cours"}">${regle.active ? "Active" : "Inactive"}</span></td>`,
+    }));
+  });
+}
+
+function ouvrirFormulaireProduit(produit = null) {
+  $("#produit-identifiant").value = produit?.identifiant || "";
+  $("#produit-code").value = produit?.code || "";
+  $("#produit-libelle").value = produit?.libelle || "";
+  $("#produit-montant-min").value = produit?.montant_min ?? 0;
+  $("#produit-montant-max").value = produit?.montant_max ?? 0;
+  $("#produit-duree-min").value = produit?.duree_min_mois ?? 0;
+  $("#produit-duree-max").value = produit?.duree_max_mois ?? 0;
+  $("#produit-secteurs").value = produit?.secteurs_vises || "";
+  $("#titre-dialogue-produit").textContent = produit ? "Modifier le produit" : "Nouveau produit de crédit";
+  $("#message-produit").textContent = "";
+  ouvrirDialogue("dialogue-produit");
 }
 
 /* ---------- Import CSV ---------- */
@@ -856,36 +1036,121 @@ function donneesFichiers() {
   return donnees;
 }
 
-async function validerFichiers(liste) {
-  fichiersSelectionnes = [...liste];
-  ouvrir("qualite");
-  try {
-    afficherRapport(await api("/api/imports-csv/valider/", { method: "POST", body: donneesFichiers() }));
-  } catch (erreur) {
-    afficherRapport({ valide: false, erreurs: [erreur.message] });
+const NOMBRE_ETAPES_IMPORT = 4;
+let etapeImport = 1;
+
+function afficherEtapeImport() {
+  for (let numero = 1; numero <= NOMBRE_ETAPES_IMPORT; numero += 1) {
+    $("#import-etape-" + numero).classList.toggle("masque", numero !== etapeImport);
   }
+  $$("#etapes-import li").forEach(element => {
+    const numero = +element.dataset.etapeImport;
+    element.classList.toggle("active", numero === etapeImport);
+    element.classList.toggle("faite", numero < etapeImport);
+  });
+  $("#import-precedent").disabled = etapeImport === 1;
+  $("#import-suivant").classList.toggle("masque", etapeImport >= NOMBRE_ETAPES_IMPORT || !rapportImport);
+  $("#confirmer-import").classList.toggle("masque", etapeImport !== NOMBRE_ETAPES_IMPORT || !rapportImport?.valide);
 }
 
-function afficherRapport(rapport) {
-  rapportImport = rapport;
-  const conteneur = $("#rapport-import");
-  conteneur.className = "rapport";
+async function validerFichiers(liste) {
+  fichiersSelectionnes = [...liste];
+  $("#etat-import").textContent = `${fichiersSelectionnes.length} fichier(s) sélectionné(s), contrôle en cours…`;
+  try {
+    rapportImport = await api("/api/imports-csv/valider/", { method: "POST", body: donneesFichiers() });
+  } catch (erreur) {
+    rapportImport = { valide: false, erreurs: [erreur.message], avertissements: [], anomalies: [], lignes: {} };
+  }
+  afficherControle(rapportImport);
+  afficherAnomalies(rapportImport);
+  afficherConfirmation(rapportImport);
+  afficherRapportQualite(rapportImport);
+  etapeImport = 2;
+  afficherEtapeImport();
+}
+
+function afficherControle(rapport) {
+  const lignesParFichier = rapport.lignes || {};
+  const anomaliesParFichier = {};
+  (rapport.anomalies || []).forEach(anomalie => {
+    anomaliesParFichier[anomalie.fichier] = (anomaliesParFichier[anomalie.fichier] || 0) + 1;
+  });
+
+  const fichiers = Object.keys(lignesParFichier).sort();
+  $("#import-fichiers").innerHTML = fichiers.length ? `
+    <div class="tableau-wrap">
+      <table>
+        <thead><tr><th>Fichier</th><th class="montant">Lignes</th><th>État</th></tr></thead>
+        <tbody>
+          ${fichiers.map(nom => {
+            const anomalies = anomaliesParFichier[nom] || 0;
+            return `<tr>
+              <td class="cellule-principale">${nom}</td>
+              <td class="montant">${formaterNombre(lignesParFichier[nom])}</td>
+              <td>${anomalies
+                ? `<span class="badge-statut en_retard">${anomalies} anomalie${anomalies > 1 ? "s" : ""}</span>`
+                : '<span class="badge-statut solde">conforme</span>'}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>` : '<div class="avertissement">Aucun fichier exploitable n\'a été lu.</div>';
+
   const erreurs = rapport.erreurs || [];
   const avertissements = rapport.avertissements || [];
-
-  conteneur.innerHTML = `
-    <div class="indicateurs" style="margin-bottom:6px">
+  $("#import-synthese").innerHTML = `
+    <div class="indicateurs">
       <article><span>Qualité</span><strong>${rapport.qualite != null ? rapport.qualite + " %" : "—"}</strong></article>
       <article><span>Lignes contrôlées</span><strong>${formaterNombre(rapport.total_lignes)}</strong></article>
       <article class="accent-danger"><span>Erreurs</span><strong>${erreurs.length}</strong></article>
       <article class="accent-alerte"><span>Avertissements</span><strong>${avertissements.length}</strong></article>
     </div>
-    ${erreurs.length ? `<div class="avertissement">${erreurs.map(e => `<div>${e}</div>`).join("")}</div>` : ""}
-    ${avertissements.length ? `<p class="sous-titre">${avertissements.length} avertissement(s) n'empêchent pas l'import.</p>` : ""}
-  `;
+    ${erreurs.length ? `<div class="avertissement">${erreurs.map(erreur => `<div>${erreur}</div>`).join("")}</div>` : ""}
+    ${avertissements.length ? `<p class="sous-titre" style="margin-top:10px">${avertissements.join(" ")}</p>` : ""}`;
+}
 
-  $("#confirmer-import").classList.toggle("masque", !rapport.valide);
-  $("#voir-anomalies").classList.toggle("masque", !rapport.anomalies);
+function tableauAnomalies(anomalies) {
+  return `
+    <div class="tableau-wrap">
+      <table>
+        <thead><tr><th>Fichier</th><th>Ligne</th><th>Type</th><th>Détail</th></tr></thead>
+        <tbody>
+          ${anomalies.map(anomalie => `
+            <tr>
+              <td class="cellule-principale">${anomalie.fichier}</td>
+              <td>${anomalie.ligne}</td>
+              <td>${anomalie.type}</td>
+              <td>${anomalie.detail}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function afficherAnomalies(rapport) {
+  const anomalies = rapport.anomalies || [];
+  $("#import-anomalies").innerHTML = anomalies.length
+    ? tableauAnomalies(anomalies)
+    : '<p class="sous-titre">Aucune anomalie relevée sur ce lot.</p>';
+}
+
+function afficherConfirmation(rapport) {
+  const total = formaterNombre(rapport.total_lignes);
+  $("#import-confirmation").innerHTML = rapport.valide
+    ? `<p class="sous-titre">${total} lignes seront intégrées. Les clients déjà connus sont mis à jour, pas dupliqués.</p>
+       ${(rapport.avertissements || []).length
+         ? '<div class="avertissement" style="margin-top:12px">Des avertissements subsistent : ils n\'empêchent pas l\'import.</div>'
+         : ""}`
+    : `<div class="avertissement">Le lot contient des erreurs bloquantes. Corrigez les fichiers à la source, puis redéposez-les.</div>`;
+}
+
+function afficherRapportQualite(rapport) {
+  const conteneur = $("#rapport-import");
+  const anomalies = rapport.anomalies || [];
+  conteneur.className = anomalies.length ? "rapport" : "etat-vide";
+  conteneur.innerHTML = anomalies.length
+    ? `<p class="sous-titre" style="margin-bottom:12px">${anomalies.length} anomalie(s) relevée(s) lors du dernier contrôle.</p>${tableauAnomalies(anomalies)}`
+    : "Aucune anomalie lors du dernier contrôle.";
 }
 
 /* ---------- Dialogues ---------- */
@@ -1053,12 +1318,48 @@ $("#fichiers-institution").onchange = evenement => validerFichiers(evenement.tar
 }));
 zoneImport.addEventListener("drop", evenement => validerFichiers(evenement.dataTransfer.files));
 
+$("#import-precedent").onclick = () => { etapeImport = Math.max(1, etapeImport - 1); afficherEtapeImport(); };
+$("#import-suivant").onclick = () => { etapeImport = Math.min(NOMBRE_ETAPES_IMPORT, etapeImport + 1); afficherEtapeImport(); };
+
 $("#confirmer-import").onclick = async () => {
-  await api("/api/imports-csv/confirmer/", { method: "POST", body: donneesFichiers() });
-  await charger();
-  ouvrir("clients");
+  $("#message-import").textContent = "Import en cours…";
+  try {
+    const resultat = await api("/api/imports-csv/confirmer/", { method: "POST", body: donneesFichiers() });
+    $("#message-import").textContent = `${resultat.clients_ajoutes} client(s) ajouté(s), ${resultat.credits_importes} crédit(s) importé(s).`;
+    await charger();
+    ouvrir("clients");
+  } catch (erreur) {
+    $("#message-import").textContent = erreur.message;
+  }
 };
-$("#voir-anomalies").onclick = () =>
-  $("#rapport-import").insertAdjacentHTML("beforeend", `<pre>${JSON.stringify(rapportImport.anomalies, null, 2)}</pre>`);
+
+$("#nouveau-produit").onclick = () => ouvrirFormulaireProduit();
+$("#formulaire-produit").onsubmit = async evenement => {
+  evenement.preventDefault();
+  const identifiant = $("#produit-identifiant").value;
+  try {
+    await api(identifiant ? `/api/produits-credit/${identifiant}/` : "/api/produits-credit/creer/", {
+      method: identifiant ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: $("#produit-code").value,
+        libelle: $("#produit-libelle").value,
+        montant_min: +$("#produit-montant-min").value,
+        montant_max: +$("#produit-montant-max").value,
+        duree_min_mois: +$("#produit-duree-min").value,
+        duree_max_mois: +$("#produit-duree-max").value,
+        secteurs_vises: $("#produit-secteurs").value,
+      }),
+    });
+    fermerDialogue("dialogue-produit");
+    chargerProduits();
+  } catch (erreur) {
+    $("#message-produit").textContent = erreur.message;
+  }
+};
+
+["#pf-filtre-secteur", "#pf-filtre-statut", "#pf-filtre-annee"].forEach(selecteur => {
+  $(selecteur).onchange = () => chargerPortefeuille();
+});
 
 charger();

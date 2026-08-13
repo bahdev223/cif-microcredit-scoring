@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Poste de travail — Gestion microcrédit</title>
-  <link rel="stylesheet" href="{% static 'styles.css' %}?v=4">
+  <link rel="stylesheet" href="{% static 'styles.css' %}?v=6">
 </head>
 <body>
 <div class="application">
@@ -20,7 +20,7 @@
       <div class="groupe-nav">
         <span>Pilotage</span>
         <button class="nav-actif" data-vue="tableau-bord">Tableau de bord</button>
-        <button data-vue="portefeuille" class="nav-prevu">Portefeuille</button>
+        <button data-vue="portefeuille">Portefeuille</button>
       </div>
       <div class="groupe-nav">
         <span>Crédit</span>
@@ -28,7 +28,7 @@
         <button data-vue="clients">Clients</button>
         <button data-vue="credits">Crédits</button>
         <button data-vue="remboursements">Échéances &amp; remboursements</button>
-        <button data-vue="retards" class="nav-prevu">Retards</button>
+        <button data-vue="retards">Retards</button>
       </div>
       <div class="groupe-nav">
         <span>Données</span>
@@ -37,8 +37,8 @@
       </div>
       <div class="groupe-nav">
         <span>Configuration</span>
-        <button data-vue="produits" class="nav-prevu">Produits de crédit</button>
-        <button data-vue="regles" class="nav-prevu">Règles d'analyse</button>
+        <button data-vue="produits">Produits de crédit</button>
+        <button data-vue="regles">Règles d'analyse</button>
         <button data-vue="configuration">Institution</button>
       </div>
       <div class="groupe-nav">
@@ -477,28 +477,68 @@
     <!-- ---------- Import ---------- -->
     <section id="importer" class="vue vue-masque">
       <div class="panneau">
-        <div class="titre-panneau">
-          <div>
-            <p class="surtexte">Import</p>
-            <h2>Importer un lot CSV</h2>
-            <p class="sous-titre">Rien n'est importé avant validation des contrôles.</p>
+        <ol class="etapes" id="etapes-import">
+          <li data-etape-import="1">Déposer</li>
+          <li data-etape-import="2">Contrôler</li>
+          <li data-etape-import="3">Corriger</li>
+          <li data-etape-import="4">Confirmer</li>
+        </ol>
+      </div>
+
+      <div class="panneau">
+        <div id="import-etape-1" class="etape-contenu">
+          <div class="titre-panneau">
+            <div>
+              <p class="surtexte">Étape 1</p>
+              <h2>Déposer les fichiers</h2>
+              <p class="sous-titre">Rien n'est importé avant contrôle. Les six fichiers sont attendus ensemble.</p>
+            </div>
+            <span class="badge">CSV uniquement</span>
           </div>
-          <span class="badge">CSV uniquement</span>
-        </div>
-        <div class="grille-import">
-          <label>Lot de référence<select id="lot-reference"></select></label>
-          <div>
-            <strong style="font-size:12.5px">Fichiers attendus</strong>
-            <div id="fichiers-attendus" class="puces"></div>
+          <div class="grille-import">
+            <label>Lot de référence disponible<select id="lot-reference"></select></label>
+            <div>
+              <strong style="font-size:12.5px">Fichiers attendus</strong>
+              <div id="fichiers-attendus" class="puces"></div>
+            </div>
           </div>
+          <label id="zone-import" class="zone-import" for="fichiers-institution">
+            <span class="icone-import">↑</span>
+            <strong>Déposez les fichiers CSV ici</strong>
+            <span>ou sélectionnez-les depuis votre poste</span>
+            <input id="fichiers-institution" type="file" accept=".csv,text/csv" multiple>
+          </label>
+          <p id="etat-import" class="message" style="margin-top:12px">Aucun fichier sélectionné.</p>
         </div>
-        <label id="zone-import" class="zone-import" for="fichiers-institution">
-          <span class="icone-import">↑</span>
-          <strong>Déposez les fichiers CSV ici</strong>
-          <span>ou sélectionnez-les depuis votre poste</span>
-          <input id="fichiers-institution" type="file" accept=".csv,text/csv" multiple>
-        </label>
-        <p id="etat-import" class="message" style="margin-top:12px">Aucun fichier sélectionné.</p>
+
+        <div id="import-etape-2" class="etape-contenu masque">
+          <p class="surtexte">Étape 2</p>
+          <h2 style="margin-bottom:14px">Contrôle des fichiers</h2>
+          <div id="import-fichiers"></div>
+          <div id="import-synthese" style="margin-top:18px"></div>
+        </div>
+
+        <div id="import-etape-3" class="etape-contenu masque">
+          <p class="surtexte">Étape 3</p>
+          <h2 style="margin-bottom:6px">Anomalies détectées</h2>
+          <p class="sous-titre" style="margin-bottom:14px">Corrigez les fichiers à la source, puis redéposez le lot. Rien n'est modifié automatiquement.</p>
+          <div id="import-anomalies"></div>
+        </div>
+
+        <div id="import-etape-4" class="etape-contenu masque">
+          <p class="surtexte">Étape 4</p>
+          <h2 style="margin-bottom:14px">Confirmation</h2>
+          <div id="import-confirmation"></div>
+        </div>
+
+        <div class="actions" style="justify-content:space-between;margin-top:22px">
+          <button id="import-precedent" class="bouton-secondaire" type="button">Précédent</button>
+          <span id="message-import" class="message"></span>
+          <span>
+            <button id="import-suivant" class="bouton-principal masque" type="button">Suivant</button>
+            <button id="confirmer-import" class="bouton-principal masque" type="button">Confirmer l'import</button>
+          </span>
+        </div>
       </div>
     </section>
 
@@ -508,15 +548,11 @@
         <div class="titre-panneau">
           <div>
             <p class="surtexte">Validation</p>
-            <h2>Contrôle qualité</h2>
-            <p class="sous-titre">Résultat des contrôles avant intégration des données.</p>
+            <h2>Qualité du dernier lot contrôlé</h2>
+            <p class="sous-titre">Détail ligne par ligne des anomalies relevées.</p>
           </div>
-          <button id="voir-anomalies" class="bouton-secondaire masque" type="button">Voir le détail</button>
         </div>
-        <div id="rapport-import" class="etat-vide">Sélectionnez un lot CSV dans l'écran d'import pour lancer les contrôles.</div>
-        <div class="actions" style="justify-content:flex-start;margin-top:16px">
-          <button id="confirmer-import" class="bouton-principal masque" type="button">Confirmer l'import</button>
-        </div>
+        <div id="rapport-import" class="etat-vide">Aucun lot contrôlé pour l'instant. Déposez des fichiers dans l'écran d'import.</div>
       </div>
     </section>
 
@@ -542,18 +578,127 @@
         <h2 style="margin-bottom:14px">Journal d'audit</h2>
         <div class="tableau-wrap">
           <table>
-            <thead><tr><th>Événement</th><th>Client</th><th>Date</th></tr></thead>
+            <thead><tr><th>Date</th><th>Événement</th><th>Demande</th><th>Client</th><th>Détail</th></tr></thead>
             <tbody id="liste-audit"></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- ---------- Écrans prévus ---------- -->
-    <section id="portefeuille" class="vue vue-masque"><div class="panneau ecran-prevu" data-ecran="portefeuille"></div></section>
-    <section id="retards" class="vue vue-masque"><div class="panneau ecran-prevu" data-ecran="retards"></div></section>
-    <section id="produits" class="vue vue-masque"><div class="panneau ecran-prevu" data-ecran="produits"></div></section>
-    <section id="regles" class="vue vue-masque"><div class="panneau ecran-prevu" data-ecran="regles"></div></section>
+    <!-- ---------- Portefeuille ---------- -->
+    <section id="portefeuille" class="vue vue-masque">
+      <div class="indicateurs">
+        <article><span>Crédits</span><strong id="pf-credits">—</strong><small id="pf-credits-actifs">—</small></article>
+        <article><span>Montant décaissé</span><strong id="pf-decaisse">—</strong><small id="pf-rembourse">—</small></article>
+        <article><span>Encours restant dû</span><strong id="pf-encours">—</strong></article>
+        <article class="accent-danger"><span>Crédits en retard</span><strong id="pf-retard">—</strong></article>
+      </div>
+
+      <div class="panneau">
+        <div class="titre-panneau">
+          <div>
+            <p class="surtexte">Pilotage</p>
+            <h2>Portefeuille crédit</h2>
+            <p class="sous-titre">Indicateurs descriptifs uniquement : aucun ratio prudentiel n'est calculé.</p>
+          </div>
+        </div>
+        <div class="barre-outils">
+          <select id="pf-filtre-secteur"><option value="">Tous les secteurs</option></select>
+          <select id="pf-filtre-statut"><option value="">Tous les statuts</option></select>
+          <select id="pf-filtre-annee"><option value="">Toutes les périodes</option></select>
+          <span id="pf-indisponibles" class="badge"></span>
+        </div>
+        <div class="tableau-wrap">
+          <table>
+            <thead><tr><th>Crédit</th><th>Client</th><th>Secteur</th><th class="montant">Décaissé</th><th class="montant">Reste dû</th><th>Décaissement</th><th>Statut</th><th></th></tr></thead>
+            <tbody id="liste-portefeuille"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panneau">
+        <p class="surtexte">Répartition</p>
+        <h2 style="margin-bottom:14px">Crédits par secteur d'activité</h2>
+        <div id="pf-repartition" class="liste-repartition"></div>
+      </div>
+    </section>
+
+    <!-- ---------- Retards ---------- -->
+    <section id="retards" class="vue vue-masque">
+      <div class="indicateurs">
+        <article class="accent-alerte"><span>Échéances impayées</span><strong id="rt-echeances">—</strong></article>
+        <article class="accent-danger"><span>Montant restant dû</span><strong id="rt-montant">—</strong></article>
+        <article><span>Clients concernés</span><strong id="rt-clients">—</strong></article>
+        <article><span>Crédits concernés</span><strong id="rt-credits">—</strong></article>
+      </div>
+
+      <div class="panneau">
+        <p class="surtexte">Recouvrement</p>
+        <h2 style="margin-bottom:14px">Ancienneté des impayés</h2>
+        <div id="rt-tranches" class="liste-repartition"></div>
+        <div class="question-metier" style="margin-top:16px">
+          <strong>Question à poser</strong>Que faites-vous concrètement lorsqu'une échéance n'est pas payée, et à partir de quand intervenez-vous ?
+        </div>
+      </div>
+
+      <div class="panneau">
+        <p class="surtexte">Détail</p>
+        <h2 style="margin-bottom:14px">Échéances échues et non soldées</h2>
+        <div class="tableau-wrap">
+          <table>
+            <thead><tr><th>Client</th><th>Crédit</th><th>Échéance</th><th>Exigible le</th><th class="montant">Attendu</th><th class="montant">Payé</th><th class="montant">Reste</th><th>Retard</th><th></th></tr></thead>
+            <tbody id="liste-retards"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Produits de crédit ---------- -->
+    <section id="produits" class="vue vue-masque">
+      <div class="panneau">
+        <div class="titre-panneau">
+          <div>
+            <p class="surtexte">Configuration</p>
+            <h2>Produits de crédit</h2>
+            <p class="sous-titre">Chaque institution définit ses propres produits. Aucun n'est livré par défaut.</p>
+          </div>
+          <button id="nouveau-produit" class="bouton-principal" type="button">Ajouter un produit</button>
+        </div>
+        <div class="tableau-wrap">
+          <table>
+            <thead><tr><th>Code</th><th>Libellé</th><th class="montant">Montants</th><th>Durées</th><th>Secteurs visés</th><th></th></tr></thead>
+            <tbody id="liste-produits"></tbody>
+          </table>
+        </div>
+        <div class="question-metier" style="margin-top:16px">
+          <strong>Question à poser</strong>Qu'est-ce qui différencie réellement vos produits les uns des autres ?
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Règles d'analyse ---------- -->
+    <section id="regles" class="vue vue-masque">
+      <div class="panneau">
+        <div class="titre-panneau">
+          <div>
+            <p class="surtexte">Configuration</p>
+            <h2>Règles d'analyse</h2>
+            <p class="sous-titre">Ce que l'application affiche ici est exactement ce qu'elle applique.</p>
+          </div>
+          <span class="badge">Expérimental</span>
+        </div>
+        <div id="avertissement-regles"></div>
+        <div class="tableau-wrap" style="margin-top:14px">
+          <table>
+            <thead><tr><th>Code</th><th>Règle</th><th>Ce qu'elle observe</th><th>Seuils appliqués</th><th>État</th></tr></thead>
+            <tbody id="liste-regles"></tbody>
+          </table>
+        </div>
+        <div class="question-metier" style="margin-top:16px">
+          <strong>Question à poser</strong>Chez vous, comment ces règles fonctionnent-elles, quels seuils utilisez-vous, et lesquelles manquent ?
+        </div>
+      </div>
+    </section>
 
   </main>
 </div>
@@ -610,6 +755,34 @@
   </div>
 </div>
 
-<script src="{% static 'app.js' %}?v=4"></script>
+<div id="dialogue-produit" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-produit">
+  <div class="fenetre-dialogue">
+    <div class="entete-dialogue">
+      <div>
+        <p class="surtexte">Configuration</p>
+        <h2 id="titre-dialogue-produit">Nouveau produit de crédit</h2>
+        <p class="sous-titre">Ces paramètres sont ceux de votre institution.</p>
+      </div>
+      <button class="fermer-dialogue" data-fermer="dialogue-produit" aria-label="Fermer">×</button>
+    </div>
+    <form id="formulaire-produit" class="formulaire-configuration">
+      <input id="produit-identifiant" type="hidden">
+      <label>Code<input id="produit-code" maxlength="30" required placeholder="STOCK"></label>
+      <label>Libellé<input id="produit-libelle" required placeholder="Fonds de roulement"></label>
+      <label>Montant minimum (FCFA)<input id="produit-montant-min" type="number" min="0" value="0"></label>
+      <label>Montant maximum (FCFA)<input id="produit-montant-max" type="number" min="0" value="0"></label>
+      <label>Durée minimale (mois)<input id="produit-duree-min" type="number" min="0" value="0"></label>
+      <label>Durée maximale (mois)<input id="produit-duree-max" type="number" min="0" value="0"></label>
+      <label class="pleine-largeur">Secteurs visés<input id="produit-secteurs" placeholder="Commerce, artisanat…"></label>
+      <div class="actions">
+        <span id="message-produit" class="message"></span>
+        <button class="bouton-secondaire" type="button" data-fermer="dialogue-produit">Annuler</button>
+        <button class="bouton-principal" type="submit">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="{% static 'app.js' %}?v=6"></script>
 </body>
 </html>
