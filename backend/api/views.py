@@ -1,5 +1,6 @@
 import json
 import csv
+from datetime import timedelta
 from io import StringIO
 from pathlib import Path
 
@@ -10,8 +11,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from audit.models import JournalAudit
+from clients.dossier import construire_dossier
 from clients.models import ActiviteImportee, Client, Institution
 from credits.models import CreditImporte, DemandeCredit, DemandeImportee, EcheanceImportee, PaiementImporte
+from credits.rapprochement import date_observation_portefeuille, rapprocher_credit, tranche_retard
 from evaluation_risque.explicabilite import expliquer_prediction
 from evaluation_risque.predicteur import predire_risque
 
@@ -40,15 +43,71 @@ def liste_lots_import(requete):
 
 @require_GET
 def tableau_bord(requete):
-    decaisse = CreditImporte.objects.aggregate(total=Sum("montant_decaisse"))["total"] or 0
-    rembourse = PaiementImporte.objects.aggregate(total=Sum("montant_paye"))["total"] or 0
+    """Indicateurs du poste de travail, tous calculés à partir des données réelles.
+
+    Aucun indicateur réglementaire (PAR30, créances douteuses, provisionnement)
+    n'est produit ici : ces définitions appartiennent à l'institution et seront
+    ajoutées après validation métier.
+    """
+    date_observation = date_observation_portefeuille()
+    credits = list(CreditImporte.objects.select_related("client").prefetch_related("echeances", "paiements"))
+    rapprochements = [rapprocher_credit(credit, date_observation) for credit in credits]
+
+    encours = sum(r["reste_du"] for r in rapprochements)
+    credits_actifs = [r for r in rapprochements if r["statut"] in ("EN_COURS", "EN_RETARD")]
+    credits_en_retard = [r for r in rapprochements if r["statut"] == "EN_RETARD"]
+    clients_avec_credit_actif = {
+        credit.client_id
+        for credit, rapprochement in zip(credits, rapprochements)
+        if rapprochement["statut"] in ("EN_COURS", "EN_RETARD")
+    }
+
+    echeances_du_jour = EcheanceImportee.objects.filter(date_exigible=date_observation)
+    horizon = date_observation + timedelta(days=30)
+    echeances_a_venir = EcheanceImportee.objects.filter(date_exigible__gt=date_observation, date_exigible__lte=horizon)
+
+    tranches = {}
+    montant_en_retard = 0
+    for rapprochement in rapprochements:
+        for echeance in rapprochement["echeances"]:
+            if echeance["en_retard"]:
+                montant_en_retard += echeance["reste_du"]
+                libelle = tranche_retard(echeance["jours_retard"])
+                tranches[libelle] = tranches.get(libelle, 0) + 1
+
+    demandes = DemandeCredit.objects.select_related("client").order_by("-cree_le")
+    a_analyser = [d for d in demandes if d.score_risque is None]
+    en_attente_decision = [d for d in demandes if d.score_risque is not None and d.decision_agent == "EN_ATTENTE"]
+
     return JsonResponse({
+        "date_observation": date_observation.isoformat(),
         "clients": Client.objects.count(),
-        "demandes": DemandeCredit.objects.count() + DemandeImportee.objects.count(),
-        "credits": CreditImporte.objects.count(),
-        "montant_decaisse": decaisse,
-        "montant_rembourse": rembourse,
-        "encours": max(0, decaisse - rembourse),
+        "clients_avec_credit_actif": len(clients_avec_credit_actif),
+        "demandes_en_cours": len(a_analyser) + len(en_attente_decision),
+        "demandes_a_analyser": len(a_analyser),
+        "demandes_en_attente_decision": len(en_attente_decision),
+        "credits": len(rapprochements),
+        "credits_actifs": len(credits_actifs),
+        "credits_en_retard": len(credits_en_retard),
+        "montant_decaisse": sum(r["montant_decaisse"] for r in rapprochements),
+        "montant_rembourse": sum(r["total_paye"] for r in rapprochements),
+        "encours": encours,
+        "echeances_du_jour": echeances_du_jour.count(),
+        "montant_echeances_du_jour": echeances_du_jour.aggregate(total=Sum("montant_du"))["total"] or 0,
+        "echeances_a_venir": echeances_a_venir.count(),
+        "montant_echeances_a_venir": echeances_a_venir.aggregate(total=Sum("montant_du"))["total"] or 0,
+        "echeances_en_retard": sum(r["nombre_echeances_en_retard"] for r in rapprochements),
+        "montant_en_retard": montant_en_retard,
+        "tranches_retard": [{"libelle": libelle, "nombre": nombre} for libelle, nombre in sorted(tranches.items())],
+        "demandes_attention": [{
+            "identifiant": demande.id,
+            "identifiant_client": demande.client_id,
+            "client": demande.client.nom_complet,
+            "montant_demande": demande.montant_demande,
+            "duree_mois": demande.duree_mois,
+            "niveau_risque": demande.niveau_risque,
+            "etat": "À analyser" if demande.score_risque is None else "En attente de décision",
+        } for demande in (a_analyser + en_attente_decision)[:8]],
     })
 
 
@@ -238,16 +297,11 @@ def detail_client(requete, identifiant_client):
         client = Client.objects.get(pk=identifiant_client)
     except Client.DoesNotExist:
         return JsonResponse({"erreur": "Client introuvable."}, status=404)
-    credits = client.credits_importes.prefetch_related("echeances", "paiements").all()
-    return JsonResponse({"client": serialiser_client(client),
-                         "activites": [{"libelle": a.libelle, "secteur": a.secteur} for a in client.activites_importees.all()],
-                         "demandes": [{"montant": d.montant, "duree_mois": d.duree_mois, "objet": d.objet} for d in client.demandes_importees.all()],
-                         "credits": [{
-        "identifiant": credit.identifiant_source, "montant": credit.montant_decaisse,
-        "duree_mois": credit.duree_mois, "date_decaissement": credit.date_decaissement.isoformat() if credit.date_decaissement else "",
-        "echeances": [{"numero": e.numero, "date": e.date_exigible.isoformat() if e.date_exigible else "", "montant": e.montant_du} for e in credit.echeances.all()],
-        "paiements": [{"date": p.date_paiement.isoformat() if p.date_paiement else "", "montant": p.montant_paye, "canal": p.canal} for p in credit.paiements.all()],
-    } for credit in credits]})
+    date_observation = date_observation_portefeuille()
+    dossier = construire_dossier(client, date_observation)
+    dossier["date_observation"] = date_observation.isoformat()
+    dossier["client"].update(serialiser_client(client))
+    return JsonResponse(dossier)
 
 
 @require_GET
@@ -265,6 +319,7 @@ def lire_json(requete):
 def serialiser_client(client):
     return {
         "identifiant": client.id,
+        "identifiant_source": client.identifiant_source or "",
         "nom_complet": client.nom_complet,
         "secteur_activite": client.secteur_activite,
         "revenu_mensuel": client.revenu_mensuel,

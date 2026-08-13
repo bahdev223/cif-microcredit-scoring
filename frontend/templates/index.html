@@ -2,37 +2,421 @@
 <html lang="fr">
 {% load static %}
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CIF | Gestion microcrédit</title><link rel="stylesheet" href="{% static 'styles.css' %}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poste de travail — Gestion microcrédit</title>
+  <link rel="stylesheet" href="{% static 'styles.css' %}?v=3">
 </head>
 <body>
 <div class="application">
-  <aside class="barre-laterale"><div class="marque"><span class="logo">C</span><div><strong id="nom-marque">CIF</strong><small>Gestion microcrédit</small></div></div>
-    <nav><button class="nav-actif" data-vue="tableau-bord">Tableau de bord</button><button data-vue="importer">Importer des données</button><button data-vue="clients">Clients</button><button data-vue="demandes">Demandes</button><button data-vue="credits">Crédits</button><button data-vue="remboursements">Remboursements</button><button data-vue="audit">Audit</button><button data-vue="configuration">Configuration</button></nav>
-    <div class="pied-barre"><span class="statut"><i></i> Service opérationnel</span><a href="/api/documentation/" target="_blank">Documentation API</a></div>
+
+  <aside class="barre-laterale">
+    <div class="marque">
+      <span class="logo" id="marque-logo">C</span>
+      <div><strong id="nom-marque">CIF</strong><small>Gestion microcrédit</small></div>
+    </div>
+
+    <nav>
+      <div class="groupe-nav">
+        <span>Pilotage</span>
+        <button class="nav-actif" data-vue="tableau-bord">Tableau de bord</button>
+        <button data-vue="portefeuille" class="nav-prevu">Portefeuille</button>
+      </div>
+      <div class="groupe-nav">
+        <span>Crédit</span>
+        <button data-vue="demandes">Demandes<span class="compteur-nav masque" id="compteur-nav-demandes">0</span></button>
+        <button data-vue="clients">Clients</button>
+        <button data-vue="credits">Crédits</button>
+        <button data-vue="remboursements">Échéances &amp; remboursements</button>
+        <button data-vue="retards" class="nav-prevu">Retards</button>
+      </div>
+      <div class="groupe-nav">
+        <span>Données</span>
+        <button data-vue="importer">Importer</button>
+        <button data-vue="qualite">Qualité des données</button>
+      </div>
+      <div class="groupe-nav">
+        <span>Configuration</span>
+        <button data-vue="produits" class="nav-prevu">Produits de crédit</button>
+        <button data-vue="regles" class="nav-prevu">Règles d'analyse</button>
+        <button data-vue="configuration">Institution</button>
+      </div>
+      <div class="groupe-nav">
+        <span>Système</span>
+        <button data-vue="audit">Journal d'audit</button>
+      </div>
+    </nav>
+
+    <div class="pied-barre">
+      <span class="statut"><i></i> Service opérationnel</span>
+      <a href="/api/etat/" target="_blank">État de l'API</a>
+    </div>
   </aside>
-  <main class="contenu"><header class="entete"><div><p id="entete-sigle" class="surtexte">Espace opérationnel</p><h1 id="titre-vue">Tableau de bord</h1><p id="description-vue" class="sous-titre">Suivez votre portefeuille et la qualité des données.</p></div><button id="actualiser" class="bouton-secondaire">Actualiser</button></header>
-    <section id="tableau-bord" class="vue"><div class="indicateurs"><article><span>Clients</span><strong id="compteur-clients">—</strong></article><article><span>Demandes</span><strong id="compteur-demandes">—</strong></article><article><span>Encours</span><strong id="compteur-encours">—</strong></article></div><div class="panneau"><div class="titre-panneau"><div><p class="surtexte">Institution</p><h2 id="nom-institution">Non configurée</h2><p id="resume-institution" class="sous-titre">Configurez votre institution avant l’import.</p></div><button class="bouton-secondaire ouvrir-vue" data-vue="configuration">Configurer</button></div></div></section>
-    <section id="importer" class="vue vue-masque"><div class="panneau"><div class="titre-panneau"><div><p class="surtexte">Import</p><h2>Importer un lot CSV</h2><p class="sous-titre">Rien n’est importé avant validation.</p></div><span class="badge">CSV uniquement</span></div><div class="grille-import"><label>Institution source<select id="lot-reference"></select></label><div><strong>Fichiers attendus</strong><div id="fichiers-attendus" class="puces"></div></div></div><label id="zone-import" class="zone-import" for="fichiers-institution"><span class="icone-import">↑</span><strong>Déposez les fichiers CSV ici</strong><span>ou sélectionnez-les depuis votre poste</span><input id="fichiers-institution" type="file" accept=".csv,text/csv" multiple></label><p id="etat-import" class="message">Aucun fichier sélectionné.</p></div></section>
-    <section id="qualite" class="vue vue-masque"><div class="panneau"><div class="titre-panneau"><div><p class="surtexte">Validation</p><h2>Contrôle qualité</h2></div><button id="voir-anomalies" class="bouton-secondaire masque">Voir le détail</button></div><div id="rapport-import" class="etat-vide">Sélectionnez un lot CSV pour lancer les contrôles.</div><button id="confirmer-import" class="bouton-principal masque">Confirmer l’import</button></div></section>
-    <section id="clients" class="vue vue-masque"><div class="panneau"><div class="titre-panneau"><div><p class="surtexte">Portefeuille</p><h2>Clients</h2></div><div class="actions-liste"><input id="recherche-clients" placeholder="Rechercher un client"><button id="nouveau-client" class="bouton-principal" type="button">Ajouter un client</button></div></div><div class="tableau-wrap"><table><thead><tr><th>Client</th><th>Secteur</th><th>Ancienneté</th><th>Source</th><th>Actions</th></tr></thead><tbody id="liste-clients"></tbody></table></div><div id="pagination-clients" class="pagination"></div></div></section>
-    <section id="demandes" class="vue vue-masque"><div class="panneau"><p class="surtexte">Crédit</p><h2>Demandes de crédit</h2><div class="tableau-wrap"><table><thead><tr><th>Client</th><th>Montant</th><th>Durée</th><th>Risque</th></tr></thead><tbody id="liste-demandes"></tbody></table></div></div></section>
-    <section id="credits" class="vue vue-masque"><div class="panneau"><p class="surtexte">Crédit</p><h2>Crédits décaissés</h2><div class="tableau-wrap"><table><thead><tr><th>Référence</th><th>Client</th><th>Montant</th><th>Durée</th></tr></thead><tbody id="liste-credits"></tbody></table></div></div></section>
-    <section id="remboursements" class="vue vue-masque"><div class="panneau"><p class="surtexte">Suivi</p><h2>Remboursements</h2><div class="tableau-wrap"><table><thead><tr><th>Référence</th><th>Client</th><th>Montant</th><th>Date</th></tr></thead><tbody id="liste-remboursements"></tbody></table></div></div></section>
-    <section id="audit" class="vue vue-masque"><div class="panneau"><p class="surtexte">Traçabilité</p><h2>Journal d’audit</h2><div class="tableau-wrap"><table><thead><tr><th>Événement</th><th>Client</th><th>Date</th></tr></thead><tbody id="liste-audit"></tbody></table></div></div></section>
-    <section id="configuration" class="vue vue-masque"><div class="panneau"><div class="titre-panneau"><div><p class="surtexte">Paramètres</p><h2>Informations de l’institution</h2><p class="sous-titre">Gérez le nom, le sigle et la localisation de votre organisation.</p></div><button id="modifier-institution" class="bouton-principal" type="button">Modifier les informations</button></div></div></section>
-    <section id="demandes-operationnelles" class="vue vue-masque"><div class="indicateurs"><article><span>Demandes analysées</span><strong id="demande-total">—</strong></article><article><span>Montant demandé</span><strong id="demande-montant-total">—</strong></article><article><span>À examiner</span><strong id="demande-attente">—</strong></article></div><div class="panneau"><div class="titre-panneau"><div><p class="surtexte">Instruction crédit</p><h2>Demandes de crédit</h2><p class="sous-titre">Analysez une nouvelle demande et suivez les décisions prises.</p></div><button id="nouvelle-demande" class="bouton-principal" type="button">+ Nouvelle demande</button></div><div class="barre-outils"><input id="recherche-demandes" placeholder="Rechercher un client"><select id="filtre-risque"><option value="">Tous les niveaux de risque</option><option value="FAIBLE">Risque faible</option><option value="MOYEN">Risque moyen</option><option value="ELEVE">Risque élevé</option></select></div><div class="tableau-wrap"><table><thead><tr><th>Client</th><th>Montant</th><th>Durée</th><th>Risque</th><th>Décision</th><th>Action</th></tr></thead><tbody id="liste-demandes-operationnelles"></tbody></table></div></div></section>
-    <section id="fiche-client-page" class="vue vue-masque">
-      <div class="retour-page"><button id="retour-clients" class="bouton-secondaire" type="button">← Retour aux clients</button></div>
-      <div class="panneau en-tete-fiche"><div><p class="surtexte">Dossier client</p><h2 id="page-fiche-client-nom">Client</h2><p id="page-fiche-client-resume" class="sous-titre"></p></div><button id="modifier-client-fiche" class="bouton-principal" type="button">Modifier le client</button></div>
-      <div class="indicateurs indicateurs-fiche"><article><span>Revenu mensuel</span><strong id="page-fiche-revenu">—</strong></article><article><span>Charges mensuelles</span><strong id="page-fiche-charges">—</strong></article><article><span>Retards enregistrés</span><strong id="page-fiche-retards">—</strong></article></div>
-      <div class="grille-fiche"><article class="panneau"><p class="surtexte">Activités</p><h2>Activités déclarées</h2><div id="page-fiche-activites" class="liste-fiche"></div></article><article class="panneau"><p class="surtexte">Demandes</p><h2>Demandes de crédit</h2><div id="page-fiche-demandes" class="liste-fiche"></div></article></div>
-      <div class="panneau"><p class="surtexte">Historique financier</p><h2>Crédits, échéances et paiements</h2><div id="page-fiche-credits" class="credits-fiche"></div></div>
+
+  <main class="contenu">
+    <header class="entete">
+      <div>
+        <p id="entete-sigle" class="surtexte">Espace opérationnel</p>
+        <h1 id="titre-vue">Tableau de bord</h1>
+        <p id="description-vue" class="sous-titre">Suivez votre portefeuille de crédit.</p>
+      </div>
+      <div class="entete-actions">
+        <span class="date-observation">Portefeuille observé au <strong id="date-observation">—</strong></span>
+        <button id="actualiser" class="bouton-secondaire" type="button">Actualiser</button>
+      </div>
+    </header>
+
+    <!-- ---------- Tableau de bord ---------- -->
+    <section id="tableau-bord" class="vue">
+      <div class="bloc-indicateurs">
+        <p class="surtexte">Portefeuille crédit</p>
+        <div class="indicateurs">
+          <article><span>Clients suivis</span><strong id="kpi-clients">—</strong><small id="kpi-clients-actifs">—</small></article>
+          <article><span>Demandes en cours</span><strong id="kpi-demandes">—</strong><small id="kpi-demandes-detail">—</small></article>
+          <article><span>Crédits actifs</span><strong id="kpi-credits-actifs">—</strong><small id="kpi-credits-total">—</small></article>
+          <article><span>Encours restant dû</span><strong id="kpi-encours">—</strong><small id="kpi-decaisse">—</small></article>
+        </div>
+      </div>
+
+      <div class="bloc-indicateurs">
+        <p class="surtexte">Échéances et retards</p>
+        <div class="indicateurs">
+          <article><span>Échéances du jour</span><strong id="kpi-echeances-jour">—</strong><small id="kpi-echeances-jour-montant">—</small></article>
+          <article><span>Échéances à 30 jours</span><strong id="kpi-echeances-venir">—</strong><small id="kpi-echeances-venir-montant">—</small></article>
+          <article class="accent-alerte"><span>Échéances en retard</span><strong id="kpi-retards">—</strong><small id="kpi-retards-montant">—</small></article>
+          <article class="accent-danger"><span>Crédits en retard</span><strong id="kpi-credits-retard">—</strong><small>sur l'ensemble du portefeuille</small></article>
+        </div>
+      </div>
+
+      <div class="grille-accueil">
+        <article class="panneau">
+          <div class="titre-panneau">
+            <div>
+              <p class="surtexte">Instruction</p>
+              <h2>Demandes nécessitant mon attention</h2>
+            </div>
+            <button class="bouton-secondaire ouvrir-vue" data-vue="demandes" type="button">Voir toutes les demandes</button>
+          </div>
+          <div id="liste-attention"></div>
+        </article>
+
+        <div>
+          <article class="panneau">
+            <p class="surtexte">Retards</p>
+            <h2 style="margin-bottom:14px">Ancienneté des impayés</h2>
+            <div id="liste-tranches" class="liste-repartition"></div>
+          </article>
+          <article class="panneau">
+            <div class="titre-panneau">
+              <div>
+                <p class="surtexte">Institution</p>
+                <h2 id="nom-institution">Non configurée</h2>
+                <p id="resume-institution" class="sous-titre"></p>
+              </div>
+            </div>
+            <button class="bouton-secondaire ouvrir-vue" data-vue="configuration" type="button">Configurer</button>
+          </article>
+        </div>
+      </div>
     </section>
+
+    <!-- ---------- Demandes ---------- -->
+    <section id="demandes" class="vue vue-masque">
+      <div class="indicateurs">
+        <article><span>Demandes enregistrées</span><strong id="demande-total">—</strong></article>
+        <article><span>Montant demandé</span><strong id="demande-montant-total">—</strong></article>
+        <article><span>En attente de décision</span><strong id="demande-attente">—</strong></article>
+      </div>
+      <div class="panneau">
+        <div class="titre-panneau">
+          <div>
+            <p class="surtexte">Instruction crédit</p>
+            <h2>Demandes de crédit</h2>
+            <p class="sous-titre">Analysez une demande et suivez les décisions prises.</p>
+          </div>
+          <button id="nouvelle-demande" class="bouton-principal" type="button">Nouvelle demande</button>
+        </div>
+        <div class="barre-outils">
+          <input id="recherche-demandes" placeholder="Rechercher un client">
+          <select id="filtre-risque">
+            <option value="">Tous les niveaux</option>
+            <option value="FAIBLE">Risque faible</option>
+            <option value="MOYEN">Risque moyen</option>
+            <option value="ELEVE">Risque élevé</option>
+          </select>
+        </div>
+        <div class="tableau-wrap">
+          <table>
+            <thead><tr><th>Client</th><th class="montant">Montant</th><th>Durée</th><th>Analyse préliminaire</th><th>Décision</th><th></th></tr></thead>
+            <tbody id="liste-demandes"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Clients ---------- -->
+    <section id="clients" class="vue vue-masque">
+      <div class="panneau">
+        <div class="titre-panneau">
+          <div>
+            <p class="surtexte">Portefeuille</p>
+            <h2>Clients</h2>
+          </div>
+          <div class="actions-liste">
+            <input id="recherche-clients" placeholder="Rechercher un client">
+            <button id="nouveau-client" class="bouton-principal" type="button">Ajouter un client</button>
+          </div>
+        </div>
+        <div class="tableau-wrap">
+          <table>
+            <thead><tr><th>Client</th><th>Secteur</th><th>Ancienneté activité</th><th>Origine</th><th></th></tr></thead>
+            <tbody id="liste-clients"></tbody>
+          </table>
+        </div>
+        <div id="pagination-clients" class="pagination"></div>
+      </div>
+    </section>
+
+    <!-- ---------- Fiche client ---------- -->
+    <section id="fiche-client" class="vue vue-masque">
+      <div class="retour-page"><button id="retour-clients" class="bouton-secondaire" type="button">← Retour aux clients</button></div>
+
+      <div class="panneau en-tete-fiche">
+        <div class="identite-client">
+          <span class="pastille-client" id="fiche-initiales">—</span>
+          <div>
+            <p class="surtexte" id="fiche-anciennete-relation">Dossier client</p>
+            <h2 id="fiche-nom">Client</h2>
+            <p id="fiche-resume" class="sous-titre"></p>
+          </div>
+        </div>
+        <div class="actions-fiche">
+          <button id="fiche-nouvelle-demande" class="bouton-principal" type="button">Nouvelle demande de crédit</button>
+          <button id="fiche-modifier" class="bouton-secondaire" type="button">Modifier</button>
+        </div>
+      </div>
+
+      <div class="grille-fiche">
+        <article class="panneau">
+          <p class="surtexte">Synthèse</p>
+          <h2 style="margin-bottom:12px">Capacité déclarée</h2>
+          <div id="fiche-synthese"></div>
+          <p class="sous-titre" style="margin-top:12px">Soustraction des montants déclarés au dossier. La formule doit être confirmée avec l'institution.</p>
+        </article>
+        <article class="panneau">
+          <p class="surtexte">Comportement observé</p>
+          <h2 style="margin-bottom:12px">Historique de remboursement</h2>
+          <div id="fiche-comportement"></div>
+        </article>
+      </div>
+
+      <div class="grille-fiche">
+        <article class="panneau">
+          <p class="surtexte">Activité économique</p>
+          <h2 style="margin-bottom:12px">Activités déclarées</h2>
+          <div id="fiche-activites" class="liste-fiche"></div>
+        </article>
+        <article class="panneau">
+          <p class="surtexte">Chronologie</p>
+          <h2 style="margin-bottom:14px">Parcours du client</h2>
+          <div id="fiche-chronologie" class="chronologie"></div>
+        </article>
+      </div>
+
+      <div class="panneau">
+        <p class="surtexte">Historique crédit</p>
+        <h2 style="margin-bottom:14px">Crédits, échéances et paiements</h2>
+        <div id="fiche-credits" class="credits-fiche"></div>
+      </div>
+    </section>
+
+    <!-- ---------- Crédits ---------- -->
+    <section id="credits" class="vue vue-masque">
+      <div class="panneau">
+        <p class="surtexte">Crédit</p>
+        <h2 style="margin-bottom:14px">Crédits décaissés</h2>
+        <div class="tableau-wrap">
+          <table>
+            <thead><tr><th>Référence</th><th>Client</th><th class="montant">Montant</th><th>Durée</th></tr></thead>
+            <tbody id="liste-credits"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Remboursements ---------- -->
+    <section id="remboursements" class="vue vue-masque">
+      <div class="panneau">
+        <p class="surtexte">Suivi</p>
+        <h2 style="margin-bottom:14px">Remboursements reçus</h2>
+        <div class="tableau-wrap">
+          <table>
+            <thead><tr><th>Référence</th><th>Client</th><th class="montant">Montant</th><th>Date</th></tr></thead>
+            <tbody id="liste-remboursements"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Import ---------- -->
+    <section id="importer" class="vue vue-masque">
+      <div class="panneau">
+        <div class="titre-panneau">
+          <div>
+            <p class="surtexte">Import</p>
+            <h2>Importer un lot CSV</h2>
+            <p class="sous-titre">Rien n'est importé avant validation des contrôles.</p>
+          </div>
+          <span class="badge">CSV uniquement</span>
+        </div>
+        <div class="grille-import">
+          <label>Lot de référence<select id="lot-reference"></select></label>
+          <div>
+            <strong style="font-size:12.5px">Fichiers attendus</strong>
+            <div id="fichiers-attendus" class="puces"></div>
+          </div>
+        </div>
+        <label id="zone-import" class="zone-import" for="fichiers-institution">
+          <span class="icone-import">↑</span>
+          <strong>Déposez les fichiers CSV ici</strong>
+          <span>ou sélectionnez-les depuis votre poste</span>
+          <input id="fichiers-institution" type="file" accept=".csv,text/csv" multiple>
+        </label>
+        <p id="etat-import" class="message" style="margin-top:12px">Aucun fichier sélectionné.</p>
+      </div>
+    </section>
+
+    <!-- ---------- Qualité ---------- -->
+    <section id="qualite" class="vue vue-masque">
+      <div class="panneau">
+        <div class="titre-panneau">
+          <div>
+            <p class="surtexte">Validation</p>
+            <h2>Contrôle qualité</h2>
+            <p class="sous-titre">Résultat des contrôles avant intégration des données.</p>
+          </div>
+          <button id="voir-anomalies" class="bouton-secondaire masque" type="button">Voir le détail</button>
+        </div>
+        <div id="rapport-import" class="etat-vide">Sélectionnez un lot CSV dans l'écran d'import pour lancer les contrôles.</div>
+        <div class="actions" style="justify-content:flex-start;margin-top:16px">
+          <button id="confirmer-import" class="bouton-principal masque" type="button">Confirmer l'import</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Institution ---------- -->
+    <section id="configuration" class="vue vue-masque">
+      <div class="panneau">
+        <div class="titre-panneau">
+          <div>
+            <p class="surtexte">Paramètres</p>
+            <h2>Informations de l'institution</h2>
+            <p class="sous-titre">Nom, sigle et localisation utilisés dans toute l'application.</p>
+          </div>
+          <button id="modifier-institution" class="bouton-principal" type="button">Modifier</button>
+        </div>
+        <div id="detail-institution" class="grille-synthese"></div>
+      </div>
+    </section>
+
+    <!-- ---------- Audit ---------- -->
+    <section id="audit" class="vue vue-masque">
+      <div class="panneau">
+        <p class="surtexte">Traçabilité</p>
+        <h2 style="margin-bottom:14px">Journal d'audit</h2>
+        <div class="tableau-wrap">
+          <table>
+            <thead><tr><th>Événement</th><th>Client</th><th>Date</th></tr></thead>
+            <tbody id="liste-audit"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Écrans prévus ---------- -->
+    <section id="portefeuille" class="vue vue-masque"><div class="panneau ecran-prevu" data-ecran="portefeuille"></div></section>
+    <section id="retards" class="vue vue-masque"><div class="panneau ecran-prevu" data-ecran="retards"></div></section>
+    <section id="produits" class="vue vue-masque"><div class="panneau ecran-prevu" data-ecran="produits"></div></section>
+    <section id="regles" class="vue vue-masque"><div class="panneau ecran-prevu" data-ecran="regles"></div></section>
+
   </main>
 </div>
-<div id="dialogue-client" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-client"><div class="fenetre-dialogue"><div class="entete-dialogue"><div><p class="surtexte">Client</p><h2 id="titre-dialogue-client">Nouveau client</h2><p class="sous-titre">Renseignez les informations nécessaires au dossier.</p></div><button class="fermer-dialogue" data-fermer="dialogue-client" aria-label="Fermer">×</button></div><form id="formulaire-client" class="formulaire-configuration"><input id="client-identifiant" type="hidden"><label>Nom complet<input id="client-nom" required></label><label>Secteur d’activité<input id="client-secteur" required></label><label>Revenu mensuel (FCFA)<input id="client-revenu" type="number" min="0" required></label><label>Charges mensuelles (FCFA)<input id="client-charges" type="number" min="0" required></label><label>Ancienneté de l’activité (mois)<input id="client-anciennete" type="number" min="0" required></label><label>Retards précédents<input id="client-retards" type="number" min="0" value="0"></label><div class="actions"><span id="message-client" class="message"></span><button id="annuler-client" class="bouton-secondaire" type="button">Annuler</button><button class="bouton-principal" type="submit">Enregistrer</button></div></form></div></div>
-<div id="dialogue-institution" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-institution"><div class="fenetre-dialogue"><div class="entete-dialogue"><div><p class="surtexte">Configuration</p><h2 id="titre-dialogue-institution">Informations de l’institution</h2><p class="sous-titre">Ces informations sont utilisées partout dans l’application.</p></div><button class="fermer-dialogue" data-fermer="dialogue-institution" aria-label="Fermer">×</button></div><form id="formulaire-institution" class="formulaire-configuration"><label>Nom de l’institution<input id="institution-nom" required></label><label>Sigle<input id="institution-sigle" maxlength="30" required></label><label>Ville<input id="institution-ville"></label><label>Pays<input id="institution-pays" required></label><div class="actions"><span id="message-institution" class="message"></span><button class="annuler-dialogue bouton-secondaire" type="button" data-fermer="dialogue-institution">Annuler</button><button class="bouton-principal" type="submit">Enregistrer</button></div></form></div></div>
-<div id="dialogue-demande" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-demande"><div class="fenetre-dialogue"><div class="entete-dialogue"><div><p class="surtexte">Nouvelle analyse</p><h2 id="titre-dialogue-demande">Demande de crédit</h2><p class="sous-titre">Le score et l’explication sont générés à l’enregistrement.</p></div><button class="fermer-dialogue" data-fermer="dialogue-demande" aria-label="Fermer">×</button></div><form id="formulaire-demande" class="formulaire-configuration"><label>Client<select id="demande-client" required><option value="">Sélectionnez un client</option></select></label><label>Montant demandé (FCFA)<input id="demande-montant" type="number" min="1" required></label><label>Durée (mois)<input id="demande-duree" type="number" min="1" value="12" required></label><div class="actions"><span id="message-demande" class="message"></span><button class="bouton-secondaire" type="button" data-fermer="dialogue-demande">Annuler</button><button class="bouton-principal" type="submit">Lancer l’analyse</button></div></form></div></div>
-<script src="{% static 'app.js' %}"></script>
-</body></html>
+
+<!-- ---------- Dialogues ---------- -->
+<div id="dialogue-client" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-client">
+  <div class="fenetre-dialogue">
+    <div class="entete-dialogue">
+      <div>
+        <p class="surtexte">Client</p>
+        <h2 id="titre-dialogue-client">Nouveau client</h2>
+        <p class="sous-titre">Informations nécessaires au dossier.</p>
+      </div>
+      <button class="fermer-dialogue" data-fermer="dialogue-client" aria-label="Fermer">×</button>
+    </div>
+    <form id="formulaire-client" class="formulaire-configuration">
+      <input id="client-identifiant" type="hidden">
+      <label class="pleine-largeur">Nom complet<input id="client-nom" required></label>
+      <label>Secteur d'activité<input id="client-secteur" required></label>
+      <label>Ancienneté de l'activité (mois)<input id="client-anciennete" type="number" min="0" required></label>
+      <label>Recettes mensuelles (FCFA)<input id="client-revenu" type="number" min="0" required></label>
+      <label>Charges mensuelles (FCFA)<input id="client-charges" type="number" min="0" required></label>
+      <label>Engagements existants (FCFA/mois)<input id="client-dette" type="number" min="0" value="0"></label>
+      <label>Retards déjà connus<input id="client-retards" type="number" min="0" value="0"></label>
+      <div class="actions">
+        <span id="message-client" class="message"></span>
+        <button id="annuler-client" class="bouton-secondaire" type="button">Annuler</button>
+        <button class="bouton-principal" type="submit">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="dialogue-institution" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-institution">
+  <div class="fenetre-dialogue">
+    <div class="entete-dialogue">
+      <div>
+        <p class="surtexte">Configuration</p>
+        <h2 id="titre-dialogue-institution">Informations de l'institution</h2>
+      </div>
+      <button class="fermer-dialogue" data-fermer="dialogue-institution" aria-label="Fermer">×</button>
+    </div>
+    <form id="formulaire-institution" class="formulaire-configuration">
+      <label>Nom de l'institution<input id="institution-nom" required></label>
+      <label>Sigle<input id="institution-sigle" maxlength="30" required></label>
+      <label>Ville<input id="institution-ville"></label>
+      <label>Pays<input id="institution-pays" required></label>
+      <div class="actions">
+        <span id="message-institution" class="message"></span>
+        <button class="bouton-secondaire" type="button" data-fermer="dialogue-institution">Annuler</button>
+        <button class="bouton-principal" type="submit">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="dialogue-demande" class="dialogue masque" role="dialog" aria-modal="true" aria-labelledby="titre-dialogue-demande">
+  <div class="fenetre-dialogue">
+    <div class="entete-dialogue">
+      <div>
+        <p class="surtexte">Instruction</p>
+        <h2 id="titre-dialogue-demande">Nouvelle demande de crédit</h2>
+        <p class="sous-titre">L'analyse préliminaire est produite à l'enregistrement.</p>
+      </div>
+      <button class="fermer-dialogue" data-fermer="dialogue-demande" aria-label="Fermer">×</button>
+    </div>
+    <form id="formulaire-demande" class="formulaire-configuration">
+      <label class="pleine-largeur">Client<select id="demande-client" required><option value="">Sélectionnez un client</option></select></label>
+      <label>Montant demandé (FCFA)<input id="demande-montant" type="number" min="1" required></label>
+      <label>Durée (mois)<input id="demande-duree" type="number" min="1" value="12" required></label>
+      <div class="actions">
+        <span id="message-demande" class="message"></span>
+        <button class="bouton-secondaire" type="button" data-fermer="dialogue-demande">Annuler</button>
+        <button class="bouton-principal" type="submit">Enregistrer la demande</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="{% static 'app.js' %}?v=3"></script>
+</body>
+</html>
