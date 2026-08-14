@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "audit",
 ]
 MIDDLEWARE = [
+    "config.middleware.SansCacheEnDeveloppement",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",

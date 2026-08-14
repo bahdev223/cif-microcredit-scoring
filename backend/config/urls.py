@@ -17,3 +17,12 @@ if settings.DEBUG:
     # Service des pièces jointes en développement uniquement. En production,
     # elles doivent être servies par le serveur web, avec un contrôle d'accès.
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+    # Les fichiers statiques passent par une route ordinaire afin que le
+    # middleware anti-cache s'applique. Lancé sans --nostatic, runserver les
+    # intercepte avant les middlewares et cette route n'est jamais atteinte :
+    # le navigateur peut alors servir d'anciens modules ES.
+    from django.contrib.staticfiles.views import serve as servir_fichier_statique
+    from django.urls import re_path
+
+    urlpatterns += [re_path(r"^static/(?P<path>.*)$", servir_fichier_statique)]

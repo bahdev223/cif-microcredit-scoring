@@ -34,16 +34,12 @@ export async function chargerVueEnsemble() {
   $("#kpi-clients").textContent = nombre(donnees.clients);
   $("#kpi-clients-actifs").textContent = `${nombre(donnees.clients_avec_credit_actif)} avec un crédit en cours`;
   $("#kpi-demandes").textContent = nombre(donnees.demandes_en_cours);
-  $("#kpi-demandes-detail").textContent = `${donnees.demandes_a_analyser} à analyser · ${donnees.demandes_en_attente_decision} en attente`;
+  $("#kpi-demandes-detail").textContent = "en attente de décision";
   $("#kpi-credits-actifs").textContent = nombre(donnees.credits_actifs);
   $("#kpi-credits-total").textContent = `${nombre(donnees.credits)} crédits enregistrés`;
   $("#kpi-encours").textContent = montant(donnees.encours);
   $("#kpi-decaisse").textContent = `${montant(donnees.montant_decaisse)} décaissés au total`;
 
-  $("#kpi-echeances-jour").textContent = nombre(donnees.echeances_du_jour);
-  $("#kpi-echeances-jour-montant").textContent = montant(donnees.montant_echeances_du_jour);
-  $("#kpi-echeances-venir").textContent = nombre(donnees.echeances_a_venir);
-  $("#kpi-echeances-venir-montant").textContent = montant(donnees.montant_echeances_a_venir);
   $("#kpi-retards").textContent = nombre(donnees.echeances_en_retard);
   $("#kpi-retards-montant").textContent = `${montant(donnees.montant_en_retard)} restant dus`;
   $("#kpi-credits-retard").textContent = nombre(donnees.credits_en_retard);

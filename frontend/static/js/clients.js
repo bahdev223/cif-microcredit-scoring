@@ -158,7 +158,6 @@ function afficherDossier(dossier) {
   afficherDemandesEnCours(dossier.demandes_en_cours);
   afficherActivites(dossier.activites);
   afficherCredits(dossier.historique_credit);
-  afficherPaiements(dossier.historique_credit);
   afficherChronologie(dossier.chronologie);
   chargerDocuments(client.identifiant);
 }
@@ -234,20 +233,6 @@ function afficherCredits(credits) {
   });
 }
 
-function afficherPaiements(credits) {
-  const versements = credits.flatMap(credit =>
-    credit.paiements.map(paiement => ({ ...paiement, credit: credit.identifiant })));
-  versements.sort((a, b) => b.date.localeCompare(a.date));
-
-  const corps = $("#liste-paiements-client");
-  corps.innerHTML = versements.length
-    ? versements.map(versement => `
-        <tr><td>${formaterDate(versement.date)}</td>
-        <td>${versement.credit}</td>
-        <td class="montant">${montant(versement.montant)}</td>
-        <td>${versement.canal || "—"}</td></tr>`).join("")
-    : '<tr><td colspan="4" class="etat-vide">Aucun versement enregistré.</td></tr>';
-}
 
 function afficherChronologie(evenements) {
   const conteneur = $("#fiche-chronologie");

@@ -1,6 +1,5 @@
 import json
 import csv
-from datetime import timedelta
 from io import StringIO
 from pathlib import Path
 
@@ -45,7 +44,11 @@ def liste_lots_import(requete):
 
 @require_GET
 def tableau_bord(requete):
-    """Indicateurs du poste de travail, tous calculés à partir des données réelles.
+    """Indicateurs de risque du portefeuille, calculés sur les données réelles.
+
+    Aucun agenda d'encaissement n'est produit : les échéances à venir sont le
+    travail du système de l'institution. Ce qui est compté ici, ce sont les
+    retards constatés, parce qu'ils portent le comportement observé.
 
     Aucun indicateur réglementaire (PAR30, créances douteuses, provisionnement)
     n'est produit ici : ces définitions appartiennent à l'institution et seront
@@ -63,10 +66,6 @@ def tableau_bord(requete):
         for credit, rapprochement in zip(credits, rapprochements)
         if rapprochement["statut"] in ("EN_COURS", "EN_RETARD")
     }
-
-    echeances_du_jour = EcheanceImportee.objects.filter(date_exigible=date_observation)
-    horizon = date_observation + timedelta(days=30)
-    echeances_a_venir = EcheanceImportee.objects.filter(date_exigible__gt=date_observation, date_exigible__lte=horizon)
 
     tranches = {}
     montant_en_retard = 0
@@ -91,10 +90,6 @@ def tableau_bord(requete):
         "montant_decaisse": sum(r["montant_decaisse"] for r in rapprochements),
         "montant_rembourse": sum(r["total_paye"] for r in rapprochements),
         "encours": encours,
-        "echeances_du_jour": echeances_du_jour.count(),
-        "montant_echeances_du_jour": echeances_du_jour.aggregate(total=Sum("montant_du"))["total"] or 0,
-        "echeances_a_venir": echeances_a_venir.count(),
-        "montant_echeances_a_venir": echeances_a_venir.aggregate(total=Sum("montant_du"))["total"] or 0,
         "echeances_en_retard": sum(r["nombre_echeances_en_retard"] for r in rapprochements),
         "montant_en_retard": montant_en_retard,
         "tranches_retard": [{"libelle": libelle, "nombre": nombre} for libelle, nombre in sorted(tranches.items())],
