@@ -8,7 +8,6 @@ class ApiMetierTests(TestCase):
     def setUp(self):
         self.client_metier = Client.objects.create(
             nom_complet="Client test", secteur_activite="Commerce",
-            revenu_mensuel=100000, charges_mensuelles=30000,
             anciennete_activite_mois=24,
         )
         credit = CreditImporte.objects.create(
@@ -25,8 +24,18 @@ class ApiMetierTests(TestCase):
         self.assertEqual(reponse.json()["credits"], 1)
 
     def test_listes_metier(self):
-        for chemin in ("/api/clients/", "/api/credits/", "/api/remboursements/", "/api/audit/"):
+        for chemin in ("/api/clients/", "/api/portefeuille/", "/api/retards/", "/api/audit/"):
             self.assertEqual(self.client.get(chemin).status_code, 200)
+
+    def test_listes_transactionnelles_retirees(self):
+        """Les listes plates de crédits et de versements ont été retirées.
+
+        Elles n'apportaient aucune lecture analytique : le portefeuille porte
+        les crédits avec leur statut, et le dossier client porte les versements
+        échéance par échéance.
+        """
+        for chemin in ("/api/credits/", "/api/remboursements/", "/api/regles-analyse/"):
+            self.assertEqual(self.client.get(chemin).status_code, 404)
 
     def test_detail_client(self):
         reponse = self.client.get(f"/api/clients/{self.client_metier.id}/")

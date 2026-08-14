@@ -41,10 +41,44 @@ Le schéma canonique porte les objets communs à toutes les institutions : clien
 
 Les deux convergent dans le dossier à T0 sans confondre les sources ni les usages : l'identification rattache le dossier ; les données analytiques alimentent les calculs ; seules les variables validées peuvent devenir des features candidates.
 
+## Connecteurs et mapping
+
+Un connecteur n'est pas un accès direct à la base de l'institution. C'est une configuration traçable qui traduit son vocabulaire vers le schéma canonique CIF.
+
+| Institution source | Schéma canonique CIF |
+| --- | --- |
+| `customer_number` ou `num_societaire` | `client_id_source` |
+| `turnover` ou `ca_mensuel` | `recettes_activite` |
+| `loan_amount` ou `montant_pret` | `montant_credit` |
+| `payment_date` ou `date_reglement` | `date_paiement` |
+
+Le connecteur doit conserver sa version, les règles de transformation, les colonnes absentes, les rejets et la provenance du lot. Il alimente ensuite le pipeline commun : normalisation, validation, Data Quality, aperçu et persistance.
+
 ## Boucle d'évaluation
 
 Après la décision humaine, l'institution continue à gérer le crédit dans son SI. Un export ultérieur fournit le comportement observé : paiements, retards, régularisation ou défaut selon la définition retenue. Ce résultat sert à évaluer le modèle ; tout réentraînement doit être contrôlé, versionné et audité.
 
+## Qualité des données par dimension
+
+Le rapport de qualité ne doit pas se limiter à un pourcentage global opaque. Il doit exposer séparément :
+
+| Dimension | Question contrôlée |
+| --- | --- |
+| Complétude | les champs nécessaires sont-ils renseignés ? |
+| Actualité | les données sont-elles assez récentes pour l'usage ? |
+| Unicité | les identifiants et lignes censées être uniques le sont-ils ? |
+| Validité | le format, le type et le domaine sont-ils acceptables ? |
+| Cohérence | les relations et les dates sont-elles compatibles ? |
+| Exactitude | la valeur correspond-elle à la réalité ? — non vérifiable automatiquement dans la plupart des cas |
+
+Un rapport distingue les erreurs bloquantes, les avertissements et ce qui ne peut pas être vérifié automatiquement.
+
 ## État actuel
 
 Le prototype accepte aujourd'hui un lot CSV structuré et persiste l'historique analytique. La détection automatique de colonnes, le mapping interactif, l'import Excel et le rapprochement avancé restent les prochaines priorités ; ils ne doivent pas être présentés comme déjà livrés.
+
+## Entrée universelle et provenance
+
+CSV/Excel constitue l'intégration manuelle ; l'API constituera l'intégration automatisée. Les trois sources doivent utiliser le même pipeline, avec le même schéma canonique et les mêmes contrôles.
+
+Pour chaque donnée importante, le Data Mart doit pouvoir conserver, lorsque disponible : valeur, système source, fichier ou lot, mode de collecte, date d'observation, date d'import, niveau de vérification et version du connecteur. La question « d'où vient cette information ? » doit pouvoir être résolue sans interprétation manuelle.

@@ -13,16 +13,20 @@ class Institution(models.Model):
 
 
 class Client(models.Model):
+    """Identité et activité, jamais la situation financière.
+
+    Une situation économique appartient à une date, pas à une personne : ce que
+    Fatou gagnait en 2023 n'est pas ce qu'elle gagne aujourd'hui. Les recettes,
+    charges et engagements sont donc relevés sur chaque demande, horodatés, et
+    conservés là. Les champs financiers qui vivaient ici ont été retirés pour
+    cette raison.
+    """
+
     identifiant_source = models.CharField(max_length=40, blank=True, unique=True, null=True)
     identifiant_institution_source = models.CharField(max_length=30, blank=True)
     nom_complet = models.CharField(max_length=160)
     secteur_activite = models.CharField(max_length=80)
-    revenu_mensuel = models.PositiveIntegerField()
-    charges_mensuelles = models.PositiveIntegerField()
-    mensualite_dette_existante = models.PositiveIntegerField(default=0)
     anciennete_activite_mois = models.PositiveIntegerField()
-    nombre_retards = models.PositiveSmallIntegerField(default=0)
-    regularite_tontine = models.CharField(max_length=20, default="inconnue")
     cree_le = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

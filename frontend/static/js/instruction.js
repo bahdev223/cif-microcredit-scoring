@@ -207,15 +207,6 @@ function afficherAnalyse(analyse) {
         : `<div class="encart">${moteur.message}</div>`}
     </div>`).join("");
 
-  $("#bloc-regles").innerHTML = `
-    <div class="encart attention" style="margin-bottom:14px">${analyse.regles_experimentales.avertissement}</div>
-    <div class="donnees">${listeDonnees([
-      ["Indicateur composite", `${analyse.regles_experimentales.indicateur_composite} / 100`],
-      ["Niveau indicatif", analyse.regles_experimentales.niveau_indicatif],
-    ])}</div>
-    <ul class="liste-puces" style="margin-top:10px;padding-left:18px;color:var(--muted);font-size:12.5px">
-      ${analyse.regles_experimentales.regles_declenchees.map(regle => `<li>${regle}</li>`).join("")}</ul>`;
-
   const versions = analyse.versions;
   $("#bloc-versions").innerHTML = listeDonnees([
     ["Feature Engine", "v" + versions.feature_engine],

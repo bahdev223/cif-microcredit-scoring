@@ -52,7 +52,6 @@ def construire_dossier(client, date_observation):
             "identifiant": demande.id,
             "montant_demande": demande.montant_demande,
             "duree_mois": demande.duree_mois,
-            "niveau_risque": demande.niveau_risque,
             "decision_agent": demande.decision_agent,
             "cree_le": demande.cree_le.isoformat(),
         } for demande in demandes_en_cours],
@@ -105,7 +104,6 @@ def construire_synthese(client, rapprochements):
         "reste_du_total": sum(r["reste_du"] for r in rapprochements),
         "jours_retard_max": max((r["jours_retard_max"] for r in rapprochements), default=0),
         "nombre_echeances_en_retard": sum(r["nombre_echeances_en_retard"] for r in rapprochements),
-        "retards_declares_a_la_saisie": client.nombre_retards,
     }
 
 

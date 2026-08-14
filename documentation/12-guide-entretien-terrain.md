@@ -39,6 +39,9 @@ Ouvrir le dossier d'une cliente, puis avancer écran par écran. À chaque étap
 
 - Ne pas présenter les indicateurs expérimentaux comme un score de risque validé. Ils ne le sont pas.
 - Ne pas promettre de prédiction de défaut. Aucun modèle n'a été entraîné sur leurs données.
+- Rencontrer si possible trois rôles : agent de crédit (pratiques et vérifications), responsable risque/crédit (définition du mauvais crédit et politique) et référent informatique/données (sources, exports, historique et clés de rapprochement).
+- Demander quelles informations sont connues à la date de demande, quelles valeurs sont écrasées au fil du temps et quelles tables conservent l'historique des échéances et paiements.
+- Commencer la visite par la cartographie : système utilisé, emplacement des clients, demandes, crédits, échéances et paiements, ancienneté des archives, exports possibles CSV/Excel et clés de rapprochement. Ouvrir ensuite le parcours de décision d'un dossier avec l'agent.
 - Ne pas défendre une règle qu'ils contestent : la noter, c'est tout. Leur correction est le livrable de la visite.
 - Ne pas dérouler les seize écrans si l'échange devient intéressant sur trois. La conversation prime sur la démonstration.
 

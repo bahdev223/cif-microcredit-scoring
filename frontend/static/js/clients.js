@@ -94,8 +94,6 @@ async function enregistrerClient(evenement) {
         nom_complet: $("#client-nom").value,
         secteur_activite: $("#client-secteur").value,
         anciennete_activite_mois: +$("#client-anciennete").value,
-        revenu_mensuel: 0,
-        charges_mensuelles: 0,
       }),
     });
     fermerDialogue("dialogue-client");

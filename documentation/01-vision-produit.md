@@ -12,6 +12,14 @@ Agent ou responsable de credit d'une institution de microfinance.
 
 L'agent consolide la situation actuelle du demandeur avec son historique importé, obtient une estimation de risque explicable, des points à vérifier et des règles métier visibles. Le système n'accorde ni ne refuse automatiquement un crédit.
 
+## Définition officielle
+
+> **CIF est une infrastructure de décision de crédit pilotée par les données de l'institution.**
+
+Elle intègre les historiques existants par CSV, Excel puis API, les mappe vers un schéma commun, qualifie leur qualité, complète les informations nécessaires lors de l'instruction, construit des variables analytiques, permet de développer et surveiller un modèle propre au portefeuille, puis restitue une analyse explicable à l'humain.
+
+Ce n'est ni un ERP de microfinance, ni un formulaire de crédit isolé, ni un modèle universel prétendant connaître toutes les institutions.
+
 ## Deux sources, un seul dossier
 
 | Source | Origine | Rôle |

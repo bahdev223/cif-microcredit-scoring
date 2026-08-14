@@ -4,8 +4,6 @@
        │
        ├── Feature Engine ──────► variables métier
        │                              │
-       ├── Rules Engine ───────► règles expérimentales (existant)
-       │                              │
        │        Scoring Engine  ····► non activé
        │                              │
        └──────────────────────────────┴──► analyse du dossier
@@ -13,10 +11,14 @@
 Le moteur statistique n'existe pas : aucune donnée réelle n'a servi à
 l'entraîner. Sa place est réservée et déclarée inactive, de sorte qu'il puisse
 être branché plus tard sans toucher au reste de la chaîne.
+
+Aucun indicateur composite n'est produit. Un nombre sur cent se lit comme un
+score quel que soit l'avertissement qui l'accompagne, et les pondérations qui
+le produiraient seraient arbitraires. Les moteurs énoncent des constats ; ce
+sont eux qui se discutent avec un agent de crédit.
 """
 
-from evaluation_risque.analyse_dossier import analyser_qualite_dossier
-from evaluation_risque.predicteur import predire_risque
+from .qualite import analyser_qualite_dossier
 
 from .confiance import evaluer_confiance, situation_premiere_demande
 from .moteurs import executer_moteurs
@@ -41,7 +43,6 @@ def analyser(demande, date_observation):
             "actif": False,
             "message": "Aucun modèle statistique n'est activé. Aucune probabilité de défaut n'est produite.",
         },
-        "regles_experimentales": executer_regles(demande),
         "versions": versions_courantes(),
     }
 
@@ -64,17 +65,3 @@ def rassembler_points(moteurs):
             elif element["sens"] == "favorable":
                 favorables.append(entree)
     return {"attention": attention, "favorables": favorables}
-
-
-def executer_regles(demande):
-    """Règles pédagogiques existantes, conservées à part et clairement datées."""
-    prediction = predire_risque(demande.client, demande)
-    return {
-        "indicateur_composite": prediction["score_risque"],
-        "niveau_indicatif": prediction["niveau_risque"],
-        "regles_declenchees": prediction["regles_declenchees"],
-        "avertissement": (
-            "Indicateur expérimental issu de règles pédagogiques. "
-            "Aucun modèle n'a été validé sur les données d'une institution."
-        ),
-    }

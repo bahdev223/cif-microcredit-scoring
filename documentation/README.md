@@ -19,5 +19,8 @@ Ce dossier rassemble la référence fonctionnelle, technique et data du prototyp
 | `13-perimetre-du-challenge.md` | frontières produit : analyse et acquisition, jamais core banking |
 | `14-acquisition-et-dossier-consolide.md` | collecte interne, import historique et feuille de route d'acquisition |
 | `15-schema-canonique-v1.md` | contrat minimal des données et gouvernance des variables |
+| `16-gouvernance-data-mart-et-modele.md` | temporalité, qualité, cible de défaut, politique de décision et passage des règles au modèle |
+| `17-diagnostic-preparation-scoring.md` | critères de préparation des données avant tout Model Lab |
+| `18-feuille-de-route-fondations.md` | ordre de construction : données, analyse, puis modèle |
 
 Pour démarrer sans contexte, lire d'abord le guide technique, puis le guide de démonstration.

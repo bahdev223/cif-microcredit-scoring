@@ -19,10 +19,6 @@ from clients.models import ActiviteImportee, Client, DocumentDossier, Institutio
 from credits.models import CreditImporte, DemandeCredit, DemandeImportee, EcheanceImportee, PaiementImporte, ProduitCredit
 from credits.rapprochement import date_observation_portefeuille, rapprocher_credit, tranche_retard
 from analyse.dossier import analyser as analyser_coeur
-from evaluation_risque.analyse_dossier import analyser_dossier
-from evaluation_risque.explicabilite import expliquer_prediction
-from evaluation_risque.predicteur import predire_risque
-from evaluation_risque.regles import CATALOGUE_REGLES
 
 FICHIERS_IMPORT = {
     "clients.csv": {"identifiant_client", "identifiant_institution", "code_secteur_principal", "anciennete_activite_mois_a_entree"},
@@ -82,16 +78,13 @@ def tableau_bord(requete):
                 tranches[libelle] = tranches.get(libelle, 0) + 1
 
     demandes = DemandeCredit.objects.select_related("client").order_by("-cree_le")
-    a_analyser = [d for d in demandes if d.score_risque is None]
-    en_attente_decision = [d for d in demandes if d.score_risque is not None and d.decision_agent == "EN_ATTENTE"]
+    a_instruire = [demande for demande in demandes if demande.decision_agent == "EN_ATTENTE"]
 
     return JsonResponse({
         "date_observation": date_observation.isoformat(),
         "clients": Client.objects.count(),
         "clients_avec_credit_actif": len(clients_avec_credit_actif),
-        "demandes_en_cours": len(a_analyser) + len(en_attente_decision),
-        "demandes_a_analyser": len(a_analyser),
-        "demandes_en_attente_decision": len(en_attente_decision),
+        "demandes_en_cours": len(a_instruire),
         "credits": len(rapprochements),
         "credits_actifs": len(credits_actifs),
         "credits_en_retard": len(credits_en_retard),
@@ -111,9 +104,8 @@ def tableau_bord(requete):
             "client": demande.client.nom_complet,
             "montant_demande": demande.montant_demande,
             "duree_mois": demande.duree_mois,
-            "niveau_risque": demande.niveau_risque,
-            "etat": "À analyser" if demande.score_risque is None else "En attente de décision",
-        } for demande in (a_analyser + en_attente_decision)[:8]],
+            "etat": "En attente de décision",
+        } for demande in a_instruire[:8]],
     })
 
 
@@ -230,9 +222,7 @@ def confirmer_import_csv(requete):
                 "nom_complet": nom_fictif(ligne["identifiant_client"]),
                 "identifiant_institution_source": ligne.get("identifiant_institution", ""),
                 "secteur_activite": ligne.get("code_secteur_principal", "Non renseigné").replace("_", " ").title(),
-                "revenu_mensuel": 0, "charges_mensuelles": 0,
                 "anciennete_activite_mois": int(ligne.get("anciennete_activite_mois_a_entree") or 0),
-                "nombre_retards": 0, "regularite_tontine": "inconnue",
             },
         )
         clients_par_source[ligne["identifiant_client"]] = client
@@ -328,12 +318,7 @@ def serialiser_client(client):
         "identifiant_source": client.identifiant_source or "",
         "nom_complet": client.nom_complet,
         "secteur_activite": client.secteur_activite,
-        "revenu_mensuel": client.revenu_mensuel,
-        "charges_mensuelles": client.charges_mensuelles,
-        "mensualite_dette_existante": client.mensualite_dette_existante,
         "anciennete_activite_mois": client.anciennete_activite_mois,
-        "nombre_retards": client.nombre_retards,
-        "regularite_tontine": client.regularite_tontine,
         "cree_le": client.cree_le.isoformat(),
     }
 
@@ -347,20 +332,6 @@ def liste_clients(requete):
         clients = clients.filter(nom_complet__icontains=recherche)
     page = Paginator(clients, int(requete.GET.get("taille", 20))).get_page(requete.GET.get("page", 1))
     return JsonResponse({"resultats": [serialiser_client(client) for client in page],
-                         "pagination": {"page": page.number, "pages": page.paginator.num_pages, "total": page.paginator.count}})
-
-
-@require_GET
-def liste_credits(requete):
-    page = Paginator(CreditImporte.objects.select_related("client").order_by("-date_decaissement"), int(requete.GET.get("taille", 20))).get_page(requete.GET.get("page", 1))
-    return JsonResponse({"resultats": [{"identifiant": c.identifiant_source, "client": c.client.nom_complet, "montant": c.montant_decaisse, "duree_mois": c.duree_mois} for c in page],
-                         "pagination": {"page": page.number, "pages": page.paginator.num_pages, "total": page.paginator.count}})
-
-
-@require_GET
-def liste_remboursements(requete):
-    page = Paginator(PaiementImporte.objects.select_related("credit__client").order_by("-date_paiement"), int(requete.GET.get("taille", 20))).get_page(requete.GET.get("page", 1))
-    return JsonResponse({"resultats": [{"identifiant": p.identifiant_source, "client": p.credit.client.nom_complet, "montant": p.montant_paye, "date": p.date_paiement.isoformat() if p.date_paiement else ""} for p in page],
                          "pagination": {"page": page.number, "pages": page.paginator.num_pages, "total": page.paginator.count}})
 
 
@@ -382,9 +353,6 @@ def resumer_evenement_audit(journal):
     if journal.type_evenement == "DECISION_ENREGISTREE":
         motif = contenu.get("motif") or "sans motif renseigné"
         return f"{contenu.get('decision', '')} — {motif}"
-    prediction = contenu.get("prediction") or {}
-    if prediction:
-        return f"Indicateur {prediction.get('score_risque')} / 100 · niveau {prediction.get('niveau_risque')}"
     return ""
 
 
@@ -411,12 +379,7 @@ def creer_client(requete):
         client = Client.objects.create(
             nom_complet=donnees["nom_complet"].strip(),
             secteur_activite=donnees["secteur_activite"].strip(),
-            revenu_mensuel=int(donnees["revenu_mensuel"]),
-            charges_mensuelles=int(donnees["charges_mensuelles"]),
-            mensualite_dette_existante=int(donnees.get("mensualite_dette_existante", 0)),
             anciennete_activite_mois=int(donnees["anciennete_activite_mois"]),
-            nombre_retards=int(donnees.get("nombre_retards", 0)),
-            regularite_tontine=donnees.get("regularite_tontine", "inconnue"),
         )
     except (KeyError, TypeError, ValueError) as erreur:
         return JsonResponse({"erreur": f"Données invalides : {erreur}"}, status=400)
@@ -430,9 +393,7 @@ def modifier_client(requete, identifiant_client):
         donnees = lire_json(requete)
         client = Client.objects.get(pk=identifiant_client)
         champs = (
-            "nom_complet", "secteur_activite", "revenu_mensuel", "charges_mensuelles",
-            "mensualite_dette_existante", "anciennete_activite_mois",
-            "nombre_retards", "regularite_tontine",
+            "nom_complet", "secteur_activite", "anciennete_activite_mois",
         )
         for champ in champs:
             if champ in donnees:
@@ -471,8 +432,6 @@ def liste_demandes_credit(requete):
         "client": demande.client.nom_complet,
         "montant_demande": demande.montant_demande,
         "duree_mois": demande.duree_mois,
-        "score_risque": demande.score_risque,
-        "niveau_risque": demande.niveau_risque,
         "decision_agent": demande.decision_agent,
         "cree_le": demande.cree_le.isoformat(),
     } for demande in demandes]})
@@ -575,15 +534,6 @@ def supprimer_document(requete, identifiant_document):
     document.fichier.delete(save=False)
     document.delete()
     return JsonResponse({"message": "Document supprimé."})
-
-
-@require_GET
-def liste_regles_analyse(requete):
-    """Rend visibles les règles réellement appliquées par l'analyse préliminaire."""
-    return JsonResponse({
-        "regles": list(CATALOGUE_REGLES),
-        "avertissement": "Règles expérimentales. Les seuils sont pédagogiques et n'ont été validés par aucune institution.",
-    })
 
 
 @require_GET
@@ -772,12 +722,7 @@ def analyser_demande_credit(requete):
             client = Client.objects.create(
                 nom_complet=donnees["nom_complet"],
                 secteur_activite=donnees["secteur_activite"],
-                revenu_mensuel=int(donnees.get("recettes_activite") or donnees.get("revenu_mensuel") or 0),
-                charges_mensuelles=int(donnees.get("charges_activite") or donnees.get("charges_mensuelles") or 0),
-                mensualite_dette_existante=int(donnees.get("mensualite_dette_existante", 0)),
                 anciennete_activite_mois=int(donnees.get("anciennete_activite_mois") or 0),
-                nombre_retards=int(donnees.get("nombre_retards", 0)),
-                regularite_tontine=donnees.get("regularite_tontine", "inconnue"),
             )
 
         demande_credit = DemandeCredit.objects.create(
@@ -786,11 +731,11 @@ def analyser_demande_credit(requete):
             montant_demande=int(donnees["montant_demande"]),
             duree_mois=int(donnees.get("duree_mois", 12)),
             objet_credit=(donnees.get("objet_credit") or "").strip(),
-            recettes_activite=int(donnees.get("recettes_activite") or client.revenu_mensuel or 0),
-            charges_activite=int(donnees.get("charges_activite") or client.charges_mensuelles or 0),
+            recettes_activite=int(donnees.get("recettes_activite") or 0),
+            charges_activite=int(donnees.get("charges_activite") or 0),
             autres_revenus_menage=int(donnees.get("autres_revenus_menage") or 0),
             charges_menage=int(donnees.get("charges_menage") or 0),
-            mensualite_dette_existante=int(donnees.get("mensualite_dette_existante") or client.mensualite_dette_existante or 0),
+            mensualite_dette_existante=int(donnees.get("mensualite_dette_existante") or 0),
             anciennete_activite_mois=int(donnees.get("anciennete_activite_mois") or client.anciennete_activite_mois or 0),
             saisonnalite_activite=(donnees.get("saisonnalite_activite") or "").strip(),
             observations_agent=(donnees.get("observations_agent") or "").strip(),
@@ -798,28 +743,21 @@ def analyser_demande_credit(requete):
     except (Client.DoesNotExist, KeyError, TypeError, ValueError) as erreur:
         return JsonResponse({"erreur": f"Données invalides : {erreur}"}, status=400)
 
-    prediction = enregistrer_analyse(demande_credit)
+    tracer_analyse(demande_credit, "DOSSIER_ENREGISTRE")
     return JsonResponse({
         "identifiant_demande": demande_credit.id,
         "identifiant_client": client.id,
-        "score_risque": prediction["score_risque"],
-        "niveau_risque": prediction["niveau_risque"],
     }, status=201)
 
 
-def enregistrer_analyse(demande_credit):
-    """Lance les règles expérimentales et trace l'analyse au journal d'audit."""
-    prediction = predire_risque(demande_credit.client, demande_credit)
-    demande_credit.score_risque = prediction["score_risque"]
-    demande_credit.niveau_risque = prediction["niveau_risque"]
-    demande_credit.save(update_fields=["score_risque", "niveau_risque"])
-    JournalAudit.objects.create(
-        demande_credit=demande_credit,
-        type_evenement="ANALYSE_PRELIMINAIRE_EFFECTUEE",
-        contenu={"prediction": prediction, "explication": expliquer_prediction(prediction)},
-    )
-    return prediction
+def tracer_analyse(demande_credit, evenement):
+    """Trace l'événement au journal, sans produire d'indicateur composite.
 
+    L'analyse n'est pas figée dans la demande : elle est recalculée à chaque
+    consultation, à partir des moteurs et du cadre en vigueur. Ce qui est
+    conservé ici, c'est l'événement et sa date.
+    """
+    JournalAudit.objects.create(demande_credit=demande_credit, type_evenement=evenement, contenu={})
 
 @require_GET
 def dossier_instruction(requete, identifiant_demande):
@@ -864,8 +802,6 @@ def serialiser_demande(demande):
         "decision_agent": demande.decision_agent,
         "motif_decision": demande.motif_decision,
         "date_decision": demande.date_decision.isoformat() if demande.date_decision else "",
-        "score_risque": demande.score_risque,
-        "niveau_risque": demande.niveau_risque,
         "cree_le": demande.cree_le.isoformat(),
     }
 
@@ -929,7 +865,7 @@ def appliquer_simulation(requete, identifiant_demande):
             "apres": {"montant": demande.montant_demande, "duree_mois": demande.duree_mois},
         },
     )
-    enregistrer_analyse(demande)
+    tracer_analyse(demande, "SIMULATION_APPLIQUEE")
     return JsonResponse({"demande": serialiser_demande(demande)})
 
 

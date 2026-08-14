@@ -11,13 +11,10 @@ const TITRES = {
   instruction: ["Instruction du dossier", "Analyse, simulation et décision."],
   clients: ["Clients", "Personnes suivies par l'institution."],
   "fiche-client": ["Dossier client", "Situation, activité et parcours."],
-  credits: ["Crédits", "Crédits décaissés."],
-  echeances: ["Échéances & paiements", "Versements reçus sur les crédits."],
   retards: ["Retards", "Échéances impayées et recouvrement."],
   importer: ["Importer des données", "Chargement et contrôle d'un lot CSV."],
   qualite: ["Qualité des données", "Anomalies du dernier lot contrôlé."],
   produits: ["Produits de crédit", "Produits proposés par l'institution."],
-  regles: ["Règles d'analyse", "Règles appliquées à l'analyse préliminaire."],
   institution: ["Institution", "Informations de votre organisation."],
   audit: ["Journal d'audit", "Traçabilité des opérations."],
 };

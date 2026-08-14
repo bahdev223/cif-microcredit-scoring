@@ -44,14 +44,29 @@ schéma canonique → validation → Data Quality → normalisation → persista
 
 L'API d'ingestion est une cible d'évolution. Elle ne doit jamais contourner le mapping, les validations de schéma, les contrôles de relation et le rapport qualité appliqués aux fichiers.
 
+## Data Mart Crédit temporel
+
+Le Data Mart Crédit est la couche analytique construite à partir du schéma canonique. Il sépare strictement :
+
+| Famille | Contenu | Moment |
+| --- | --- | --- |
+| Données de demande | situation économique, produit, montant, durée, historique déjà connu | T0, avant la décision |
+| Données de performance | échéances, paiements, jours de retard, statut, perte éventuelle | après le décaissement |
+
+Chaque ligne analytique doit pouvoir reconstruire ce qui était connu au moment de la demande. Une information produite après T0 ne peut jamais devenir une feature de ce même crédit : c'est une fuite de données.
+
+La cible d'historique pour un futur modèle est idéalement de cinq années, et au minimum trois lorsque cela est possible. Les petites données synthétiques du prototype servent aux tests et à la démonstration ; elles ne prouvent pas la robustesse d'un modèle statistique.
+
 ## Evolution cible, seulement apres validation
 
-1. Notebook data : explorer un dataset anonymise et comparer regression logistique, arbres et boosting.
-2. Service API : isoler le calcul du score derriere une API securisee.
-3. Explicabilite : afficher les facteurs d'un modele valide (par exemple SHAP).
-4. Audit : tracer la version du modele, les entrees, la recommandation et la decision humaine.
-5. Acquisition : CSV et Excel, détection de colonnes, mapping, aperçu, qualité et rapprochement client.
-6. Intégration : connecter le Core Banking uniquement avec l'accord de l'institution, après avoir identifié les formats réellement utilisés.
-7. API d'ingestion : exposer des lots ou ressources canoniques, authentifiés et auditables, qui traversent exactement le même pipeline qualité que CSV et Excel.
+1. Schéma canonique et dictionnaire de données validés avec les institutions.
+2. Acquisition CSV/XLSX, mapping, qualité, aperçu et rapprochement client.
+3. Data Mart temporel et snapshots des analyses.
+4. Cadres de collecte adaptés aux activités et produits.
+5. Feature Engine et laboratoire : exploration, analyse univariée, stabilité temporelle et sélection justifiée des variables.
+6. Modèle de référence simple, puis comparaison avec des modèles plus complexes seulement si cela est justifié.
+7. Politique de décision versionnée, paramétrée et validée par l'institution.
+8. Monitoring, réévaluation et réentraînement contrôlé.
+9. API d'ingestion authentifiée et auditée, puis connecteurs SI après identification des formats réels.
 
 Chaque etape doit repondre a un besoin metier observe et ne doit pas etre ajoutee seulement pour faire plus technique.

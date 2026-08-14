@@ -52,9 +52,6 @@ class DemandeCredit(models.Model):
     anciennete_activite_mois = models.PositiveIntegerField(default=0)
     saisonnalite_activite = models.CharField(max_length=40, blank=True)
 
-    score_risque = models.PositiveSmallIntegerField(null=True, blank=True)
-    niveau_risque = models.CharField(max_length=20, blank=True)
-
     observations_agent = models.TextField(blank=True)
     decision_agent = models.CharField(max_length=20, choices=DECISIONS, default="EN_ATTENTE")
     motif_decision = models.CharField(max_length=160, blank=True)

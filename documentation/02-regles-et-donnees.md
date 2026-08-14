@@ -30,6 +30,14 @@ Chaque champ du schéma canonique doit être documenté avec : sa description, s
 
 `FEATURE_SCORING = false` est la valeur par défaut. Une variable doit démontrer qu'elle est disponible à T0, utile, fiable, légitime et non discriminatoire avant toute entrée dans un modèle.
 
+Les champs standardisés (montant, nombre, date, catégorie, booléen) sont à privilégier pour l'analyse. Le texte libre et les jugements subjectifs ne sont pas des features par défaut.
+
+## Provenance et fiabilité
+
+Une valeur analytique doit être accompagnée de sa date d'observation, sa source, son mode de collecte et son état de vérification. À titre de règle pratique, l'historique transactionnel et documentaire est généralement plus fiable qu'une donnée auto-déclarée ; cette provenance doit rester visible au Feature Engine et à l'agent.
+
+Exemple : `recettes_activite = 700000`, source = saisie agent, date = 2026-08-13, vérification = non vérifiée. Cette métadonnée ne rend pas la valeur vraie ou fausse ; elle permet d'interpréter son niveau de confiance.
+
 ## Regles simples
 
 - R01 : si la capacite mensuelle est inferieure a l'echeance indicative, lever une alerte.

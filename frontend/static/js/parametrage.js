@@ -1,4 +1,8 @@
-/* Produits de crédit, règles d'analyse et informations de l'institution. */
+/* Produits de crédit et informations de l'institution.
+
+   L'écran des règles a été retiré : il affichait un catalogue codé en dur,
+   alors que les règles applicables appartiennent désormais aux cadres
+   d'analyse configurés par l'institution. */
 
 import {
   $, api, boutonIcone, creer, fermerDialogue, ICONE_CORBEILLE, ICONE_CRAYON,
@@ -8,7 +12,6 @@ import { enregistrerChargeur } from "./navigation.js";
 
 export function brancherParametrage() {
   enregistrerChargeur("produits", chargerProduits);
-  enregistrerChargeur("regles", chargerRegles);
   enregistrerChargeur("institution", chargerInstitution);
 
   $("#nouveau-produit").onclick = () => ouvrirFormulaireProduit();
@@ -97,16 +100,6 @@ async function enregistrerProduit(evenement) {
 
 /* ---------- Règles ---------- */
 
-async function chargerRegles() {
-  const donnees = await api("/api/regles-analyse/");
-  $("#avertissement-regles").innerHTML = `<div class="encart attention">${donnees.avertissement}</div>`;
-  $("#liste-regles").innerHTML = donnees.regles.map(regle => `
-    <tr><td class="principale">${regle.code}</td>
-    <td>${regle.libelle}</td>
-    <td>${regle.description}</td>
-    <td>${regle.seuils}</td>
-    <td><span class="badge-statut ${regle.active ? "solde" : "en_cours"}">${regle.active ? "Active" : "Inactive"}</span></td></tr>`).join("");
-}
 
 /* ---------- Institution ---------- */
 
