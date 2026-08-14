@@ -12,9 +12,11 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from django.conf import settings
 
+from acquisition.qualite import evaluer as evaluer_qualite
 from audit.models import JournalAudit
 from clients.dossier import construire_dossier
 from clients.models import ActiviteImportee, Client, DocumentDossier, Institution
+from cadres.models import CadreAnalyse
 from credits.models import CreditImporte, DemandeCredit, DemandeImportee, EcheanceImportee, PaiementImporte, ProduitCredit
 from credits.rapprochement import date_observation_portefeuille, rapprocher_credit, tranche_retard
 from analyse.dossier import analyser as analyser_coeur
@@ -115,98 +117,55 @@ def lire_csv_importe(fichier):
 
 
 def analyser_lot_import(requete):
+    """Lit les fichiers déposés puis produit le rapport qualité par dimension."""
     fichiers = {fichier.name: fichier for fichier in requete.FILES.getlist("fichiers")}
-    erreurs, avertissements, anomalies, tables = [], [], [], {}
+    tables, erreurs_lecture = {}, []
+
     for nom in FICHIERS_IMPORT:
         if nom not in fichiers:
-            erreurs.append(f"{nom} est manquant.")
+            erreurs_lecture.append(f"{nom} est manquant.")
             continue
         try:
             lignes, manquantes = lire_csv_importe(fichiers[nom])
-            tables[nom] = lignes
+            tables[nom.replace(".csv", "")] = lignes
             if manquantes:
-                erreurs.append(f"{nom} : colonnes manquantes — {', '.join(manquantes)}.")
-                anomalies.append({"fichier": nom, "ligne": 1, "type": "Colonnes manquantes", "detail": ", ".join(manquantes)})
+                erreurs_lecture.append(f"{nom} : colonnes manquantes — {', '.join(manquantes)}.")
             if not lignes:
-                erreurs.append(f"{nom} ne contient aucune ligne.")
+                erreurs_lecture.append(f"{nom} ne contient aucune ligne.")
         except (UnicodeDecodeError, ValueError) as erreur:
-            erreurs.append(str(erreur))
+            erreurs_lecture.append(str(erreur))
 
-    if tables.get("clients.csv"):
-        clients = tables["clients.csv"]
-        identifiants = [ligne.get("identifiant_client", "") for ligne in clients]
-        if len(identifiants) != len(set(identifiants)):
-            erreurs.append("clients.csv contient des identifiants client dupliqués.")
-            vus = set()
-            for numero, identifiant in enumerate(identifiants, start=2):
-                if identifiant in vus:
-                    anomalies.append({"fichier": "clients.csv", "ligne": numero, "type": "Doublon", "detail": identifiant})
-                vus.add(identifiant)
-        manquants = sum(1 for ligne in clients for valeur in ligne.values() if not valeur)
-        if manquants:
-            avertissements.append(f"{manquants} valeur(s) manquante(s) détectée(s) dans clients.csv.")
-            for numero, ligne in enumerate(clients, start=2):
-                for colonne, valeur in ligne.items():
-                    if not valeur:
-                        anomalies.append({"fichier": "clients.csv", "ligne": numero, "type": "Valeur manquante", "detail": colonne})
-
-    relations = [
-        ("activites.csv", "identifiant_client", "clients.csv", "identifiant_client"),
-        ("demandes_credit.csv", "identifiant_client", "clients.csv", "identifiant_client"),
-        ("credits.csv", "identifiant_demande", "demandes_credit.csv", "identifiant_demande"),
-        ("echeances.csv", "identifiant_credit", "credits.csv", "identifiant_credit"),
-        ("paiements.csv", "identifiant_credit", "credits.csv", "identifiant_credit"),
-        ("paiements.csv", "identifiant_echeance", "echeances.csv", "identifiant_echeance"),
-    ]
-    for enfant, cle_enfant, parent, cle_parent in relations:
-        if enfant in tables and parent in tables:
-            connus = {ligne.get(cle_parent) for ligne in tables[parent]}
-            incoherentes = [ligne.get(cle_enfant) for ligne in tables[enfant] if ligne.get(cle_enfant) not in connus]
-            if incoherentes:
-                erreurs.append(f"{enfant} : {len(incoherentes)} relation(s) invalide(s) vers {parent}.")
-                for numero, ligne in enumerate(tables[enfant], start=2):
-                    if ligne.get(cle_enfant) not in connus:
-                        anomalies.append({"fichier": enfant, "ligne": numero, "type": "Relation invalide", "detail": f"{cle_enfant}={ligne.get(cle_enfant)}"})
-
-    total = sum(len(lignes) for lignes in tables.values())
-    qualite = max(0, 100 - 20 * len(erreurs) - 3 * len(avertissements))
-    return tables, erreurs, avertissements, anomalies[:100], total, qualite
-
-
-def nom_fictif(identifiant):
-    prenoms = ("Fatou", "Awa", "Ibrahim", "Mariam", "Ousmane", "Aminata", "Moussa", "Kadiatou")
-    noms = ("Traoré", "Diallo", "Coulibaly", "Koné", "Camara", "Keïta", "Touré", "Diarra")
-    numero = int(identifiant.split("-")[-1])
-    return f"{prenoms[numero % len(prenoms)]} {noms[(numero // len(prenoms)) % len(noms)]} {numero:03d}"
+    champs_attendus = {
+        nom.replace(".csv", ""): sorted(champs)
+        for nom, champs in FICHIERS_IMPORT.items()
+    }
+    rapport = evaluer_qualite(tables, champs_attendus)
+    rapport["erreurs"] = erreurs_lecture + rapport["erreurs"]
+    rapport["integrable"] = not rapport["erreurs"]
+    rapport["lignes"] = {nom: len(lignes) for nom, lignes in tables.items()}
+    return {nom + ".csv": lignes for nom, lignes in tables.items()}, rapport
 
 
 @csrf_exempt
 @require_POST
 def valider_import_csv(requete):
     try:
-        tables, erreurs, avertissements, anomalies, total, qualite = analyser_lot_import(requete)
+        _, rapport = analyser_lot_import(requete)
     except Exception as erreur:
         return JsonResponse({"erreur": f"Lecture impossible : {erreur}"}, status=400)
-    return JsonResponse({
-        "valide": not erreurs,
-        "qualite": qualite,
-        "erreurs": erreurs,
-        "avertissements": avertissements,
-        "anomalies": anomalies,
-        "lignes": {nom: len(lignes) for nom, lignes in tables.items()},
-        "total_lignes": total,
-    })
+    return JsonResponse(rapport)
 
 
 @csrf_exempt
 @require_POST
 def confirmer_import_csv(requete):
     try:
-        tables, erreurs, avertissements, anomalies, total, qualite = analyser_lot_import(requete)
+        tables, rapport = analyser_lot_import(requete)
     except Exception as erreur:
         return JsonResponse({"erreur": f"Lecture impossible : {erreur}"}, status=400)
-    if erreurs:
-        return JsonResponse({"erreur": "Le lot contient des erreurs et ne peut pas être importé.", "erreurs": erreurs}, status=400)
+    if not rapport["integrable"]:
+        return JsonResponse({"erreur": "Le lot contient des erreurs bloquantes et ne peut pas être importé.",
+                             "erreurs": rapport["erreurs"]}, status=400)
 
     clients_par_source = {}
     ajoutes = 0
@@ -279,7 +238,7 @@ def confirmer_import_csv(requete):
             )
     return JsonResponse({"message": "Import confirmé.", "clients_ajoutes": ajoutes, "credits_importes": len(credits_par_source),
                          "demandes_importees": len(demandes), "activites_importees": len(tables["activites.csv"]),
-                         "qualite": qualite, "avertissements": avertissements, "total_lignes": total})
+                         "avertissements": rapport["avertissements"], "total_lignes": rapport["total_lignes"]})
 
 
 @require_GET
@@ -666,6 +625,7 @@ def gerer_produit_credit(requete, identifiant_produit=None):
             "duree_min_mois": int(donnees.get("duree_min_mois") or 0),
             "duree_max_mois": int(donnees.get("duree_max_mois") or 0),
             "secteurs_vises": (donnees.get("secteurs_vises") or "").strip(),
+            "cadre_analyse_id": donnees.get("identifiant_cadre") or None,
         }
         if champs["montant_max"] and champs["montant_max"] < champs["montant_min"]:
             return JsonResponse({"erreur": "Le montant maximum est inférieur au montant minimum."}, status=400)
@@ -701,7 +661,21 @@ def liste_produits_credit(requete):
         "duree_min_mois": produit.duree_min_mois,
         "duree_max_mois": produit.duree_max_mois,
         "secteurs_vises": produit.secteurs_vises,
+        "identifiant_cadre": produit.cadre_analyse_id,
+        "cadre": produit.cadre_analyse.reference if produit.cadre_analyse_id else "",
     } for produit in produits]})
+
+
+@require_GET
+def liste_cadres_analyse(requete):
+    """Cadres publiés, proposés au rattachement d'un produit de crédit."""
+    cadres = CadreAnalyse.objects.filter(statut="PUBLIE").order_by("nom", "-version")
+    return JsonResponse({"cadres": [{
+        "identifiant": cadre.id,
+        "code": cadre.code,
+        "reference": cadre.reference,
+        "version": cadre.version,
+    } for cadre in cadres]})
 
 
 @csrf_exempt

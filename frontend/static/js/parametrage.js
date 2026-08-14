@@ -23,12 +23,16 @@ export function brancherParametrage() {
 /* ---------- Produits ---------- */
 
 async function chargerProduits() {
-  const donnees = await api("/api/produits-credit/");
+  const [donnees, cadres] = await Promise.all([api("/api/produits-credit/"), api("/api/cadres-analyse/")]);
+  $("#produit-cadre").replaceChildren(
+    new Option("Cadre par défaut", ""),
+    ...cadres.cadres.map(cadre => new Option(cadre.reference, cadre.identifiant)),
+  );
   const corps = $("#liste-produits");
   corps.replaceChildren();
 
   if (!donnees.produits.length) {
-    corps.innerHTML = '<tr><td colspan="6" class="etat-vide">Aucun produit configuré. Ajoutez ceux de votre institution.</td></tr>';
+    corps.innerHTML = '<tr><td colspan="7" class="etat-vide">Aucun produit configuré. Ajoutez ceux de votre institution.</td></tr>';
     return;
   }
 
@@ -43,7 +47,8 @@ async function chargerProduits() {
       <td>${produit.libelle}</td>
       <td class="montant">${bornesMontant}</td>
       <td>${bornesDuree}</td>
-      <td>${produit.secteurs_vises || "—"}</td>`);
+      <td>${produit.secteurs_vises || "—"}</td>
+      <td>${produit.cadre || "Cadre par défaut"}</td>`);
 
     const actions = creer("td", { className: "actions-tableau" });
     const modifier = boutonIcone("modifier", "Modifier", ICONE_CRAYON);
@@ -69,6 +74,7 @@ function ouvrirFormulaireProduit(produit = null) {
   $("#produit-duree-min").value = produit?.duree_min_mois ?? 0;
   $("#produit-duree-max").value = produit?.duree_max_mois ?? 0;
   $("#produit-secteurs").value = produit?.secteurs_vises || "";
+  $("#produit-cadre").value = produit?.identifiant_cadre || "";
   $("#titre-dialogue-produit").textContent = produit ? "Modifier le produit" : "Nouveau produit de crédit";
   $("#message-produit").textContent = "";
   ouvrirDialogue("dialogue-produit");
@@ -89,6 +95,7 @@ async function enregistrerProduit(evenement) {
         duree_min_mois: +$("#produit-duree-min").value,
         duree_max_mois: +$("#produit-duree-max").value,
         secteurs_vises: $("#produit-secteurs").value,
+        identifiant_cadre: $("#produit-cadre").value || null,
       }),
     });
     fermerDialogue("dialogue-produit");
@@ -97,9 +104,6 @@ async function enregistrerProduit(evenement) {
     $("#message-produit").textContent = erreur.message;
   }
 }
-
-/* ---------- Règles ---------- */
-
 
 /* ---------- Institution ---------- */
 

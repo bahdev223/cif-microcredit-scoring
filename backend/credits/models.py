@@ -16,6 +16,10 @@ class ProduitCredit(models.Model):
     duree_min_mois = models.PositiveSmallIntegerField(default=0)
     duree_max_mois = models.PositiveSmallIntegerField(default=0)
     secteurs_vises = models.CharField(max_length=200, blank=True)
+    cadre_analyse = models.ForeignKey(
+        "cadres.CadreAnalyse", on_delete=models.SET_NULL, null=True, blank=True, related_name="produits",
+        help_text="Méthode d'analyse financière appliquée aux demandes portant ce produit.",
+    )
     actif = models.BooleanField(default=True)
 
     def __str__(self):
@@ -51,6 +55,13 @@ class DemandeCredit(models.Model):
     mensualite_dette_existante = models.PositiveIntegerField(default=0)
     anciennete_activite_mois = models.PositiveIntegerField(default=0)
     saisonnalite_activite = models.CharField(max_length=40, blank=True)
+
+    # Cadre qui a servi à analyser cette demande, dans sa version d'alors : une
+    # instruction reste reproductible même si l'institution fait évoluer sa
+    # méthode ensuite.
+    cadre_analyse = models.ForeignKey(
+        "cadres.CadreAnalyse", on_delete=models.SET_NULL, null=True, blank=True, related_name="demandes")
+    valeurs_cadre = models.JSONField(default=dict, blank=True)
 
     observations_agent = models.TextField(blank=True)
     decision_agent = models.CharField(max_length=20, choices=DECISIONS, default="EN_ATTENTE")

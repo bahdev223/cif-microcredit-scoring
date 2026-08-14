@@ -29,7 +29,7 @@ from .versions import versions_courantes
 def analyser(demande, date_observation):
     variables = construire_variables(demande, date_observation)
     qualite_dossier = analyser_qualite_dossier(demande)
-    moteurs = executer_moteurs(variables, qualite_dossier)
+    moteurs = executer_moteurs(variables, qualite_dossier, demande)
     confiance = evaluer_confiance(moteurs, qualite_dossier, variables)
 
     return {

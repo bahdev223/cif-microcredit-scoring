@@ -1,5 +1,9 @@
 """Les six moteurs spécialisés.
 
+Le moteur de capacité ne calcule rien lui-même : il exécute le cadre
+d'analyse applicable et lit ce qu'il produit. La méthode de calcul
+appartient à l'institution, pas à ce fichier.
+
 Chaque moteur observe une seule dimension du dossier et produit trois choses :
 
     evaluable    dit s'il dispose de quoi se prononcer
@@ -14,6 +18,10 @@ Les seuils employés ici sont des repères de lecture, pas une politique de
 crédit. Ils sont écrits en clair pour qu'une institution puisse les corriger.
 """
 
+from cadres.moteur import executer, executer_cadre
+
+from . import cadre_par_defaut
+
 SEUIL_PRESSION_TENDUE = 0.5
 SEUIL_PRESSION_CRITIQUE = 0.8
 SEUIL_ANCIENNETE_ETABLIE = 24
@@ -21,9 +29,9 @@ SEUIL_ANCIENNETE_RECENTE = 12
 SEUIL_CONCENTRATION_SAISONNIERE = 0.22
 
 
-def executer_moteurs(variables, qualite_dossier):
+def executer_moteurs(variables, qualite_dossier, demande):
     return [
-        moteur_capacite(variables),
+        moteur_capacite(variables, demande),
         moteur_historique(variables),
         moteur_comportement(variables),
         moteur_endettement(variables),
@@ -40,78 +48,134 @@ def constat(sens, texte):
     return {"sens": sens, "texte": texte}
 
 
-def moteur_capacite(variables):
-    capacite = variables["capacite_financiere"]
-    credit = variables["credit_demande"]
+def moteur_capacite(variables, demande):
+    """Exécute le cadre d'analyse applicable et lit ce qu'il produit.
 
-    if not capacite["renseignee"]:
+    Aucune cascade n'est calculée ici : la méthode appartient à l'institution.
+    Si son produit de crédit désigne un cadre, c'est celui-là qui s'applique,
+    dans la version enregistrée sur la demande. Sinon, le cadre par défaut est
+    exécuté — lui aussi une simple configuration, par le même moteur.
+    """
+    resultat = executer_cadre_applicable(demande)
+    lignes = [ligne for ligne in resultat["lignes"] if ligne["mode"] != "INFORMATION"]
+
+    if not resultat["valeurs"].get("RECETTES_ACT") and not any(
+        ligne["valeur"] for ligne in lignes if ligne["mode"] == "SAISIE"
+    ):
         return {
             "code": "capacite",
             "libelle": "Capacité de remboursement",
             "evaluable": False,
-            "message": "Aucune recette n'est renseignée : la capacité de remboursement ne peut pas être appréciée.",
+            "message": "Aucun montant n'a été relevé : la capacité de remboursement ne peut pas être appréciée.",
             "indicateurs": [],
             "constats": [],
+            "cadre": resultat["cadre"],
         }
 
-    marge = capacite["marge_disponible"]
-    echeance = credit["echeance_estimee"]
-    pression = round(echeance / marge, 3) if marge and marge > 0 else None
+    marge = valeur_par_role(resultat, "MARGE_DISPONIBLE")
+    pression = valeur_par_role(resultat, "PRESSION_REMBOURSEMENT")
+    echeance = variables["credit_demande"]["echeance_estimee"]
 
-    if marge is None or marge <= 0:
-        niveau = "insuffisante"
-    elif pression is None:
-        niveau = "indeterminee"
-    elif pression > 1:
-        niveau = "depassee"
-    elif pression >= SEUIL_PRESSION_CRITIQUE:
-        niveau = "critique"
-    elif pression >= SEUIL_PRESSION_TENDUE:
-        niveau = "tendue"
-    else:
-        niveau = "soutenable"
-
-    constats = []
-    if niveau == "insuffisante":
-        constats.append(constat("attention", "Les charges déclarées absorbent la totalité des recettes."))
-    elif niveau == "depassee":
-        constats.append(constat("attention", f"L'échéance estimée dépasse la marge disponible de {echeance - marge:,} F.".replace(",", " ")))
-    elif niveau == "critique":
-        constats.append(constat("attention", "L'échéance absorbe plus de 80 % de la marge disponible."))
-    elif niveau == "tendue":
-        constats.append(constat("attention", "L'échéance absorbe plus de la moitié de la marge disponible."))
-    else:
-        constats.append(constat("favorable", "L'échéance reste inférieure à la moitié de la marge disponible."))
-
-    if capacite["taux_marge_activite"] is not None and capacite["taux_marge_activite"] < 0.15:
+    constats = [
+        constat("attention" if regle["resultat"] == "POINT_ATTENTION" else "favorable", regle["message"])
+        for regle in resultat["regles_declenchees"]
+    ]
+    if variables["capacite_financiere"]["taux_marge_activite"] is not None \
+            and variables["capacite_financiere"]["taux_marge_activite"] < 0.15:
         constats.append(constat("attention", "Marge d'activité faible : le chiffre d'affaires est élevé mais peu rentable."))
+    for anomalie in resultat["anomalies"]:
+        constats.append(constat("attention", anomalie["message"]))
 
     return {
         "code": "capacite",
         "libelle": "Capacité de remboursement",
         "evaluable": True,
         "message": "",
-        "cascade": [
-            {"libelle": "Recettes de l'activité", "montant": capacite["recettes"], "sens": "credit"},
-            {"libelle": "Charges de l'activité", "montant": capacite["charges_activite"] or 0, "sens": "debit"},
-            {"libelle": "Résultat de l'activité", "montant": capacite["resultat_activite"], "sens": "sous_total"},
-            {"libelle": "Autres revenus du ménage", "montant": capacite["autres_revenus"] or 0, "sens": "credit"},
-            {"libelle": "Charges du ménage", "montant": capacite["charges_menage"] or 0, "sens": "debit"},
-            {"libelle": "Engagements existants", "montant": capacite["engagements"] or 0, "sens": "debit"},
-            {"libelle": "Marge disponible", "montant": marge, "sens": "total"},
-        ],
+        "cadre": resultat["cadre"],
+        "cascade": [{
+            "libelle": ligne["nom"],
+            "montant": ligne["valeur"],
+            "sens": "sous_total" if ligne["sens"] == "RESULTAT" else ligne["sens"].lower(),
+            "section": ligne["section_nom"],
+        } for ligne in lignes if ligne["type"] != "POURCENTAGE"],
         "pression": {
-            "valeur": pression,
-            "niveau": niveau,
+            "valeur": round(pression / 100, 3) if pression else None,
+            "niveau": niveau_pression(marge, pression),
             "echeance_estimee": echeance,
             "marge_disponible": marge,
         },
         "indicateurs": [
             indicateur("Marge disponible", marge, "montant"),
-            indicateur("Échéance estimée", echeance, "montant"),
-            indicateur("Taux de marge de l'activité", capacite["taux_marge_activite"], "pourcentage"),
+            indicateur("Échéance projetée", echeance, "montant"),
+            indicateur("Pression de remboursement", round(pression / 100, 3) if pression else None, "pourcentage"),
         ],
         "constats": constats,
+    }
+
+
+def valeur_par_role(resultat, role):
+    """Lit une valeur par le rôle déclaré, jamais par le nom de la rubrique.
+
+    L'institution appelle sa marge « Marge disponible », « Reste à vivre » ou
+    « Capacité nette » : seul le rôle qu'elle attribue à la rubrique permet à
+    la plateforme de savoir de quoi il s'agit.
+    """
+    for ligne in resultat["lignes"]:
+        if ligne.get("role") == role:
+            return ligne["valeur"]
+    return None
+
+
+def niveau_pression(marge, pression):
+    if marge is None or marge <= 0:
+        return "insuffisante"
+    if pression is None:
+        return "indeterminee"
+    if pression > 100:
+        return "depassee"
+    if pression >= 100 * SEUIL_PRESSION_CRITIQUE:
+        return "critique"
+    if pression >= 100 * SEUIL_PRESSION_TENDUE:
+        return "tendue"
+    return "soutenable"
+
+
+def executer_cadre_applicable(demande):
+    """Choisit le cadre à appliquer, puis l'exécute.
+
+    Le cadre retenu est enregistré sur la demande : deux consultations de la
+    même instruction, à des mois d'écart, donnent le même résultat même si
+    l'institution a publié une version plus récente entre-temps.
+    """
+    contexte = {"ECHEANCE_PROJETEE": demande.echeance_estimee}
+    cadre = demande.cadre_analyse or (demande.produit.cadre_analyse if demande.produit_id else None)
+
+    if cadre is not None:
+        resultat = executer_cadre(cadre, valeurs_saisies_demande(demande, cadre), contexte)
+        return resultat
+
+    resultat = executer(cadre_par_defaut.DEFINITION, cadre_par_defaut.valeurs_depuis_demande(demande),
+                        cadre_par_defaut.REGLES, contexte)
+    resultat["cadre"] = {
+        "code": cadre_par_defaut.CODE,
+        "nom": cadre_par_defaut.NOM,
+        "version": 0,
+        "reference": cadre_par_defaut.NOM,
+        "statut": "PAR_DEFAUT",
+    }
+    return resultat
+
+
+def valeurs_saisies_demande(demande, cadre):
+    """Valeurs à injecter dans un cadre configuré par l'institution."""
+    if demande.valeurs_cadre:
+        return dict(demande.valeurs_cadre)
+    # Tant que le formulaire dynamique n'existe pas, on rapproche les champs
+    # relevés sur la demande des rubriques qui portent le même code.
+    return {
+        code: valeur
+        for code, valeur in cadre_par_defaut.valeurs_depuis_demande(demande).items()
+        if any(rubrique["code"] == code for rubrique in cadre.definition())
     }
 
 

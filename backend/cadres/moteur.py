@@ -78,6 +78,7 @@ def executer(definition, valeurs_saisies, regles=(), contexte=None):
         "unite": rubrique.get("unite", ""),
         "section_code": rubrique.get("section_code", ""),
         "section_nom": rubrique.get("section_nom", ""),
+        "role": rubrique.get("role", ""),
         "formule": rubrique.get("formule", ""),
         "valeur": arrondir(valeurs.get(rubrique["code"], 0), rubrique.get("type", "MONTANT")),
     } for rubrique in definition]

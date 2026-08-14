@@ -66,38 +66,50 @@ async function valider(liste) {
   afficherEtape();
 }
 
-function afficherControle() {
+function afficherControle(rapport) {
   const lignesParFichier = rapport.lignes || {};
-  const anomaliesParFichier = {};
-  (rapport.anomalies || []).forEach(anomalie => {
-    anomaliesParFichier[anomalie.fichier] = (anomaliesParFichier[anomalie.fichier] || 0) + 1;
-  });
+  const fichiers = Object.keys(lignesParFichier).sort();
 
-  const noms = Object.keys(lignesParFichier).sort();
-  $("#import-fichiers").innerHTML = noms.length
-    ? `<div class="tableau-wrap"><table class="donnees-tableau">
-        <thead><tr><th>Fichier</th><th class="montant">Lignes</th><th>État</th></tr></thead>
-        <tbody>${noms.map(nom => {
-          const anomalies = anomaliesParFichier[nom] || 0;
-          return `<tr><td class="principale">${nom}</td>
-            <td class="montant">${nombre(lignesParFichier[nom])}</td>
-            <td>${anomalies
-              ? `<span class="badge-statut en_retard">${anomalies} anomalie${anomalies > 1 ? "s" : ""}</span>`
-              : '<span class="badge-statut solde">conforme</span>'}</td></tr>`;
-        }).join("")}</tbody></table></div>`
-    : '<div class="encart danger">Aucun fichier exploitable n\'a été lu.</div>';
+  $("#import-fichiers").innerHTML = fichiers.length ? `
+    <div class="tableau-wrap">
+      <table class="donnees-tableau">
+        <thead><tr><th>Fichier</th><th class="montant">Lignes</th></tr></thead>
+        <tbody>${fichiers.map(nom => `
+          <tr><td class="principale">${nom}.csv</td>
+          <td class="montant">${nombre(lignesParFichier[nom])}</td></tr>`).join("")}
+        </tbody>
+      </table>
+    </div>` : '<div class="encart danger">Aucun fichier exploitable n'a été lu.</div>';
 
-  const erreurs = rapport.erreurs || [];
-  const avertissements = rapport.avertissements || [];
-  $("#import-synthese").innerHTML = `
-    <div class="chiffres">
-      <div><span>Qualité</span><strong>${rapport.qualite != null ? rapport.qualite + " %" : "—"}</strong></div>
-      <div><span>Lignes contrôlées</span><strong>${nombre(rapport.total_lignes)}</strong></div>
-      <div class="danger"><span>Erreurs</span><strong>${erreurs.length}</strong></div>
-      <div class="alerte"><span>Avertissements</span><strong>${avertissements.length}</strong></div>
+  $("#import-synthese").innerHTML = gabaritDimensions(rapport);
+}
+
+/* Six dimensions séparées, jamais un pourcentage global : un chiffre unique
+   ne dit ni quoi corriger, ni si le lot est utilisable. */
+function gabaritDimensions(rapport) {
+  const marques = { ok: "✓", avertissement: "⚠", erreur: "✕", non_verifiable: "○" };
+  const sens = { ok: "favorable", avertissement: "attention", erreur: "attention", non_verifiable: "absent" };
+  const dimensions = rapport.dimensions || [];
+
+  return `
+    <div class="tableau-wrap">
+      <table class="donnees-tableau">
+        <thead><tr><th></th><th>Dimension</th><th>Question contrôlée</th><th>Constat</th></tr></thead>
+        <tbody>${dimensions.map(d => `
+          <tr>
+            <td><span class="point ${sens[d.statut] || ""}"><span class="marque">${marques[d.statut] || "·"}</span></span></td>
+            <td class="principale">${d.libelle}</td>
+            <td><span class="secondaire">${d.question}</span></td>
+            <td>${d.constat}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
     </div>
-    ${erreurs.length ? `<div class="encart danger" style="margin-top:16px">${erreurs.map(e => `<div>${e}</div>`).join("")}</div>` : ""}
-    ${avertissements.length ? `<p class="sous-titre" style="margin-top:12px">${avertissements.join(" ")}</p>` : ""}`;
+    ${(rapport.erreurs || []).length ? `<div class="encart danger" style="margin-top:14px">
+      <strong>Erreurs bloquantes</strong>${rapport.erreurs.map(e => `<div>${e}</div>`).join("")}</div>` : ""}
+    ${(rapport.avertissements || []).length ? `<div class="encart attention" style="margin-top:12px">
+      <strong>Avertissements</strong>${rapport.avertissements.map(a => `<div>${a}</div>`).join("")}</div>` : ""}
+    <p class="sous-titre" style="margin-top:12px">L'exactitude ne se contrôle pas depuis un fichier : elle demande une visite, une pièce justificative ou un recoupement externe.</p>`;
 }
 
 function tableauAnomalies(anomalies) {
@@ -116,20 +128,21 @@ function afficherAnomalies() {
 }
 
 function afficherConfirmation() {
-  $("#import-confirmation").innerHTML = rapport.valide
+  $("#import-confirmation").innerHTML = rapport.integrable
     ? `<p class="sous-titre">${nombre(rapport.total_lignes)} lignes seront intégrées. Les clients déjà connus sont mis à jour, pas dupliqués.</p>
        ${(rapport.avertissements || []).length
          ? '<div class="encart attention" style="margin-top:14px">Des avertissements subsistent : ils n\'empêchent pas l\'import.</div>' : ""}`
     : '<div class="encart danger">Le lot contient des erreurs bloquantes. Corrigez les fichiers à la source, puis redéposez-les.</div>';
 }
 
-function afficherRapportQualite() {
+function afficherRapportQualite(rapport) {
   const conteneur = $("#rapport-import");
   const anomalies = rapport.anomalies || [];
-  conteneur.className = anomalies.length ? "" : "etat-vide";
-  conteneur.innerHTML = anomalies.length
-    ? `<p class="sous-titre" style="margin-bottom:14px">${anomalies.length} anomalie(s) relevée(s) lors du dernier contrôle.</p>${tableauAnomalies(anomalies)}`
-    : "Aucune anomalie lors du dernier contrôle.";
+  conteneur.className = "";
+  conteneur.innerHTML = gabaritDimensions(rapport)
+    + (anomalies.length
+      ? `<h3 style="margin:22px 0 12px">Anomalies relevées</h3>${tableauAnomalies(anomalies)}`
+      : '<p class="sous-titre" style="margin-top:18px">Aucune anomalie ligne à ligne.</p>');
 }
 
 async function confirmer() {

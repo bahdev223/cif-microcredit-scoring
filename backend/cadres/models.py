@@ -65,6 +65,7 @@ class CadreAnalyse(models.Model):
             "unite": rubrique.unite,
             "section_code": rubrique.section.code,
             "section_nom": rubrique.section.nom,
+            "role": rubrique.role,
             "formule": rubrique.expression,
         } for rubrique in self.rubriques_ordonnees()]
 
@@ -102,6 +103,7 @@ class CadreAnalyse(models.Model):
                     periodicite=rubrique.periodicite,
                     source=rubrique.source,
                     obligatoire=rubrique.obligatoire,
+                    role=rubrique.role,
                     ordre=rubrique.ordre,
                 )
                 if hasattr(rubrique, "formule"):
@@ -155,6 +157,15 @@ class RubriqueAnalyse(models.Model):
     )
     SENS = (("CREDIT", "S'ajoute"), ("DEBIT", "Se retranche"), ("RESULTAT", "Résultat"), ("NEUTRE", "Neutre"))
     SOURCES = (("DECLARATIVE", "Déclarative"), ("IMPORTEE", "Importée"), ("CALCULEE", "Calculée"))
+    # Une institution nomme ses rubriques comme elle veut. Pour que la
+    # plateforme sache laquelle porte la marge ou la pression, la rubrique
+    # déclare son rôle : c'est ce qui évite de coder des noms en dur.
+    ROLES = (
+        ("", "Aucun rôle particulier"),
+        ("MARGE_DISPONIBLE", "Marge disponible"),
+        ("PRESSION_REMBOURSEMENT", "Pression de remboursement"),
+        ("RESULTAT_ACTIVITE", "Résultat de l'activité"),
+    )
     PERIODICITES = (
         ("MENSUELLE", "Mensuelle"), ("CAMPAGNE", "Par campagne"),
         ("ANNUELLE", "Annuelle"), ("PONCTUELLE", "Ponctuelle"),
@@ -170,6 +181,7 @@ class RubriqueAnalyse(models.Model):
     periodicite = models.CharField(max_length=20, choices=PERIODICITES, default="MENSUELLE")
     source = models.CharField(max_length=20, choices=SOURCES, default="DECLARATIVE")
     obligatoire = models.BooleanField(default=False)
+    role = models.CharField(max_length=30, choices=ROLES, blank=True)
     ordre = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
