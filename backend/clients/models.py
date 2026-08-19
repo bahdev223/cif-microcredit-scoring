@@ -22,7 +22,7 @@ class Client(models.Model):
     cette raison.
     """
 
-    identifiant_source = models.CharField(max_length=40, blank=True, unique=True, null=True)
+    identifiant_source = models.CharField(max_length=40, blank=True, null=True)
     identifiant_institution_source = models.CharField(max_length=30, blank=True)
     nom_complet = models.CharField(max_length=160)
     secteur_activite = models.CharField(max_length=80)
@@ -31,6 +31,14 @@ class Client(models.Model):
 
     def __str__(self):
         return self.nom_complet
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("identifiant_institution_source", "identifiant_source"),
+                name="client_source_unique_par_institution",
+            )
+        ]
 
 
 def chemin_document(instance, nom_fichier):
@@ -65,8 +73,11 @@ class DocumentDossier(models.Model):
 
 class ActiviteImportee(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="activites_importees")
-    identifiant_source = models.CharField(max_length=40, unique=True)
+    identifiant_source = models.CharField(max_length=40)
     secteur = models.CharField(max_length=80)
     libelle = models.CharField(max_length=160, blank=True)
     est_principale = models.BooleanField(default=True)
     date_debut = models.DateField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=("client", "identifiant_source"), name="activite_source_unique_par_client")]

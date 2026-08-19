@@ -59,7 +59,7 @@ def evaluer(tables, champs_attendus, date_reference=None):
 
     completude = controler_completude(tables, champs_attendus, anomalies, erreurs, avertissements)
     unicite = controler_unicite(tables, anomalies, erreurs)
-    validite = controler_validite(tables, anomalies, avertissements)
+    validite = controler_validite(tables, anomalies, erreurs)
     coherence = controler_coherence(tables, anomalies, erreurs)
     actualite = controler_actualite(tables, date_reference, avertissements)
 
@@ -136,7 +136,7 @@ def controler_unicite(tables, anomalies, erreurs):
     )
 
 
-def controler_validite(tables, anomalies, avertissements):
+def controler_validite(tables, anomalies, erreurs):
     invalides = 0
     for nom, lignes in tables.items():
         for numero, ligne in enumerate(lignes, start=2):
@@ -153,11 +153,14 @@ def controler_validite(tables, anomalies, avertissements):
                     anomalies.append({"fichier": nom, "ligne": numero, "dimension": "validite",
                                       "type": "Valeur non numérique", "detail": f"{champ} = {texte}"})
     if invalides:
-        avertissements.append(f"{invalides} valeur(s) au format inattendu.")
+        erreurs.append(
+            f"{invalides} valeur(s) obligatoire(s) ou exploitable(s) est/sont au format invalide. "
+            "Aucune valeur invalide ne sera transformée en zéro."
+        )
     return dimension(
         "validite", "Validité", "le format, le type et le domaine sont-ils acceptables ?",
         "Formats conformes." if not invalides else f"{invalides} valeur(s) au format inattendu.",
-        anomalies=invalides, statut="avertissement" if invalides else "ok",
+        anomalies=invalides, statut="erreur" if invalides else "ok",
     )
 
 

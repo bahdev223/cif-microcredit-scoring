@@ -1,6 +1,7 @@
 .DS_Store
 Thumbs.db
 .vscode/
+.venv/
 *.sqlite3
 donnees/temporaires/
 donnees-locales/

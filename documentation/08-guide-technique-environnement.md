@@ -134,7 +134,7 @@ La base SQLite et les fichiers du dépôt sont montés dans le conteneur. Ne pas
 
 ```powershell
 python backend/manage.py check
-python backend/manage.py test api
+python backend/manage.py test
 python tests/verifier_monde.py
 git status
 ```

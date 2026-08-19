@@ -196,10 +196,17 @@ def _lire_lot_correspondant(requete):
 
 
 def _entier(valeur):
-    try:
-        return int(float(str(valeur or "0").replace(" ", "").replace(",", ".")))
-    except (ValueError, TypeError):
+    """Convertit un nombre déjà validé, sans jamais masquer une erreur en zéro."""
+    texte = str(valeur or "").strip()
+    if not texte:
         return 0
+    try:
+        nombre = float(texte.replace(" ", "").replace(",", "."))
+        if not nombre.is_integer():
+            raise ValueError
+        return int(nombre)
+    except (ValueError, TypeError):
+        raise ValueError(f"Valeur numérique invalide : « {valeur} ».")
 
 
 @csrf_exempt
@@ -233,9 +240,9 @@ def confirmer_lot_acquisition(requete):
             identifiant = ligne.get("identifiant_client", "")
             client, cree = Client.objects.update_or_create(
                 identifiant_source=identifiant,
+                identifiant_institution_source=ligne.get("identifiant_institution", ""),
                 defaults={
                     "nom_complet": ligne.get("nom_client") or f"Client {identifiant}",
-                    "identifiant_institution_source": ligne.get("identifiant_institution", ""),
                     "secteur_activite": ligne.get("code_secteur_principal", "Non renseigné"),
                     "anciennete_activite_mois": _entier(ligne.get("anciennete_activite_mois_a_entree")),
                 },
@@ -246,15 +253,15 @@ def confirmer_lot_acquisition(requete):
         for ligne in tables.get("activites", []):
             client = clients.get(ligne.get("identifiant_client"))
             if client:
-                ActiviteImportee.objects.update_or_create(identifiant_source=ligne["identifiant_activite"], defaults={
-                    "client": client, "secteur": ligne.get("code_secteur", ""), "libelle": ligne.get("libelle_activite", ""),
+                ActiviteImportee.objects.update_or_create(client=client, identifiant_source=ligne["identifiant_activite"], defaults={
+                    "secteur": ligne.get("code_secteur", ""), "libelle": ligne.get("libelle_activite", ""),
                     "date_debut": lire_date(ligne.get("date_debut")),
                 })
         for ligne in tables.get("demandes_credit", []):
             client = clients.get(ligne.get("identifiant_client"))
             if client:
-                DemandeImportee.objects.update_or_create(identifiant_source=ligne["identifiant_demande"], defaults={
-                    "client": client, "montant": _entier(ligne.get("montant_demande")), "duree_mois": _entier(ligne.get("duree_demandee_mois")),
+                DemandeImportee.objects.update_or_create(client=client, identifiant_source=ligne["identifiant_demande"], defaults={
+                    "montant": _entier(ligne.get("montant_demande")), "duree_mois": _entier(ligne.get("duree_demandee_mois")),
                     "date_demande": lire_date(ligne.get("date_demande")), "objet": ligne.get("objet_credit", ""),
                 })
         demandes = {ligne["identifiant_demande"]: ligne for ligne in tables.get("demandes_credit", [])}
@@ -263,8 +270,8 @@ def confirmer_lot_acquisition(requete):
             demande = demandes.get(ligne.get("identifiant_demande"), {})
             client = clients.get(ligne.get("identifiant_client")) or clients.get(demande.get("identifiant_client"))
             if client:
-                credit, _ = CreditImporte.objects.update_or_create(identifiant_source=ligne["identifiant_credit"], defaults={
-                    "client": client, "identifiant_demande_source": ligne.get("identifiant_demande", ""),
+                credit, _ = CreditImporte.objects.update_or_create(client=client, identifiant_source=ligne["identifiant_credit"], defaults={
+                    "identifiant_demande_source": ligne.get("identifiant_demande", ""),
                     "montant_decaisse": _entier(ligne.get("montant_decaisse")), "duree_mois": _entier(ligne.get("duree_mois")),
                     "date_decaissement": lire_date(ligne.get("date_decaissement")),
                 })
@@ -273,16 +280,16 @@ def confirmer_lot_acquisition(requete):
         for ligne in tables.get("echeances", []):
             credit = credits.get(ligne.get("identifiant_credit"))
             if credit:
-                echeance, _ = EcheanceImportee.objects.update_or_create(identifiant_source=ligne["identifiant_echeance"], defaults={
-                    "credit": credit, "numero": _entier(ligne.get("numero")), "date_exigible": lire_date(ligne.get("date_exigible")),
+                echeance, _ = EcheanceImportee.objects.update_or_create(credit=credit, identifiant_source=ligne["identifiant_echeance"], defaults={
+                    "numero": _entier(ligne.get("numero")), "date_exigible": lire_date(ligne.get("date_exigible")),
                     "montant_du": _entier(ligne.get("montant_du")),
                 })
                 echeances[ligne["identifiant_echeance"]] = echeance
         for ligne in tables.get("paiements", []):
             credit = credits.get(ligne.get("identifiant_credit"))
             if credit:
-                PaiementImporte.objects.update_or_create(identifiant_source=ligne["identifiant_paiement"], defaults={
-                    "credit": credit, "echeance": echeances.get(ligne.get("identifiant_echeance")),
+                PaiementImporte.objects.update_or_create(credit=credit, identifiant_source=ligne["identifiant_paiement"], defaults={
+                    "echeance": echeances.get(ligne.get("identifiant_echeance")),
                     "date_paiement": lire_date(ligne.get("date_paiement")), "montant_paye": _entier(ligne.get("montant_paye")),
                     "canal": ligne.get("canal", ""),
                 })
@@ -478,9 +485,9 @@ def confirmer_import_csv(requete):
     for ligne in tables["clients.csv"]:
         client, cree = Client.objects.update_or_create(
             identifiant_source=ligne["identifiant_client"],
+            identifiant_institution_source=ligne.get("identifiant_institution", ""),
             defaults={
                 "nom_complet": nom_fictif(ligne["identifiant_client"]),
-                "identifiant_institution_source": ligne.get("identifiant_institution", ""),
                 "secteur_activite": ligne.get("code_secteur_principal", "Non renseigné").replace("_", " ").title(),
                 "anciennete_activite_mois": int(ligne.get("anciennete_activite_mois_a_entree") or 0),
             },
@@ -492,8 +499,8 @@ def confirmer_import_csv(requete):
         client = clients_par_source.get(ligne.get("identifiant_client"))
         if client:
             ActiviteImportee.objects.update_or_create(
-                identifiant_source=ligne["identifiant_activite"],
-                defaults={"client": client, "secteur": ligne.get("code_secteur", ""),
+                client=client, identifiant_source=ligne["identifiant_activite"],
+                defaults={"secteur": ligne.get("code_secteur", ""),
                           "libelle": ligne.get("libelle_activite", ""),
                           "est_principale": ligne.get("est_activite_principale") == "1",
                           "date_debut": ligne.get("date_debut_activite") or None},
@@ -503,8 +510,8 @@ def confirmer_import_csv(requete):
         client = clients_par_source.get(ligne.get("identifiant_client"))
         if client:
             DemandeImportee.objects.update_or_create(
-                identifiant_source=ligne["identifiant_demande"],
-                defaults={"client": client, "montant": int(ligne.get("montant_demande") or 0),
+                client=client, identifiant_source=ligne["identifiant_demande"],
+                defaults={"montant": int(ligne.get("montant_demande") or 0),
                           "duree_mois": int(ligne.get("duree_demandee_mois") or 0),
                           "date_demande": ligne.get("date_demande") or None,
                           "objet": ligne.get("objet_credit", "")},
@@ -515,8 +522,8 @@ def confirmer_import_csv(requete):
         client = clients_par_source.get(demande.get("identifiant_client"))
         if client:
             credit, _ = CreditImporte.objects.update_or_create(
-                identifiant_source=ligne["identifiant_credit"],
-                defaults={"client": client, "identifiant_demande_source": ligne.get("identifiant_demande", ""),
+                client=client, identifiant_source=ligne["identifiant_credit"],
+                defaults={"identifiant_demande_source": ligne.get("identifiant_demande", ""),
                           "montant_decaisse": int(ligne.get("montant_decaisse") or 0),
                           "duree_mois": int(ligne.get("duree_mois") or 0),
                           "date_decaissement": ligne.get("date_decaissement") or None},
@@ -527,8 +534,8 @@ def confirmer_import_csv(requete):
         credit = credits_par_source.get(ligne.get("identifiant_credit"))
         if credit:
             echeance, _ = EcheanceImportee.objects.update_or_create(
-                identifiant_source=ligne["identifiant_echeance"],
-                defaults={"credit": credit, "numero": int(ligne.get("numero_echeance") or 0),
+                credit=credit, identifiant_source=ligne["identifiant_echeance"],
+                defaults={"numero": int(ligne.get("numero_echeance") or 0),
                           "date_exigible": ligne.get("date_exigible") or None,
                           "montant_du": int(ligne.get("montant_total_du") or 0)},
             )
@@ -537,8 +544,8 @@ def confirmer_import_csv(requete):
         credit = credits_par_source.get(ligne.get("identifiant_credit"))
         if credit:
             PaiementImporte.objects.update_or_create(
-                identifiant_source=ligne["identifiant_paiement"],
-                defaults={"credit": credit, "echeance": echeances_par_source.get(ligne.get("identifiant_echeance")),
+                credit=credit, identifiant_source=ligne["identifiant_paiement"],
+                defaults={"echeance": echeances_par_source.get(ligne.get("identifiant_echeance")),
                           "date_paiement": ligne.get("date_paiement") or None,
                           "montant_paye": int(ligne.get("montant_paye") or 0), "canal": ligne.get("canal_paiement", "")},
             )

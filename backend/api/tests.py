@@ -116,3 +116,38 @@ class ApiMetierTests(TestCase):
         self.assertEqual(len(dossier["historique_credit"]), 1)
         self.assertEqual(dossier["historique_credit"][0]["identifiant"], "CR-LOT")
 
+    def test_montant_invalide_bloque_le_mapping_et_ne_devient_pas_zero(self):
+        contenu = b"identifiant_credit;identifiant_demande;montant_decaisse\nCR-INVALIDE;DM-INVALIDE;MONTANT_INVALIDE\n"
+        correspondance = {
+            "table": "credits",
+            "colonnes": [
+                {"colonne": "identifiant_credit", "champ": "identifiant_credit"},
+                {"colonne": "identifiant_demande", "champ": "identifiant_demande"},
+                {"colonne": "montant_decaisse", "champ": "montant_decaisse"},
+            ],
+        }
+        reponse = self.client.post("/api/acquisition/valider-correspondance/", {
+            "fichier": SimpleUploadedFile("credits.csv", contenu, content_type="text/csv"),
+            "correspondance": json.dumps(correspondance),
+        })
+        self.assertEqual(reponse.status_code, 200)
+        rapport = reponse.json()["rapport"]
+        self.assertFalse(rapport["integrable"])
+        self.assertTrue(any(anomalie["type"] == "Valeur non numérique" for anomalie in rapport["anomalies"]))
+        self.assertEqual(rapport["dimensions"][3]["statut"], "erreur")
+
+    def test_identifiants_source_peuvent_etre_reutilises_par_institution(self):
+        """Un même export ne doit jamais écraser les données d'un autre SFD."""
+        client_a = Client.objects.create(
+            identifiant_source="CL-001", identifiant_institution_source="SFD-A",
+            nom_complet="Awa A", secteur_activite="Commerce", anciennete_activite_mois=12,
+        )
+        client_b = Client.objects.create(
+            identifiant_source="CL-001", identifiant_institution_source="SFD-B",
+            nom_complet="Awa B", secteur_activite="Commerce", anciennete_activite_mois=12,
+        )
+        CreditImporte.objects.create(client=client_a, identifiant_source="CR-001", montant_decaisse=100000)
+        CreditImporte.objects.create(client=client_b, identifiant_source="CR-001", montant_decaisse=200000)
+        self.assertEqual(Client.objects.filter(identifiant_source="CL-001").count(), 2)
+        self.assertEqual(CreditImporte.objects.filter(identifiant_source="CR-001").count(), 2)
+
