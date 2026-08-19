@@ -4,6 +4,7 @@ from io import StringIO
 from pathlib import Path
 
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Sum
 from django.http import JsonResponse
 from django.utils import timezone
@@ -12,7 +13,10 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from django.conf import settings
 
-from acquisition.qualite import evaluer as evaluer_qualite
+from acquisition.correspondance import appliquer, proposer_correspondance
+from acquisition.lecture import LectureImpossible, echantillon, feuilles_tableur, lire
+from acquisition.qualite import evaluer as evaluer_qualite, lire_date
+from acquisition.referentiel import TABLES, champs_obligatoires, decrire_referentiel
 from audit.models import JournalAudit
 from clients.dossier import construire_dossier
 from clients.models import ActiviteImportee, Client, DocumentDossier, Institution
@@ -32,6 +36,308 @@ FICHIERS_IMPORT = {
 
 RACINE_PROJET = Path(__file__).resolve().parents[2]
 REPERTOIRE_LOTS = RACINE_PROJET / "donnees" / "synthetiques"
+
+
+@csrf_exempt
+@require_POST
+def analyser_fichier_acquisition(requete):
+    """Lit un export Excel ou CSV et propose un mapping, sans persister de donnée.
+
+    Cette étape est volontairement non destructive : l'institution examine la
+    feuille, les colonnes détectées et les propositions avant toute validation.
+    """
+    fichier = requete.FILES.get("fichier")
+    if not fichier:
+        return JsonResponse({"erreur": "Déposez un fichier CSV ou Excel."}, status=400)
+
+    extension = Path(fichier.name).suffix.lower()
+    if extension not in {".csv", ".xlsx", ".xlsm"}:
+        return JsonResponse({"erreur": "Format non pris en charge : CSV, XLSX ou XLSM attendus."}, status=400)
+    if fichier.size > 15 * 1024 * 1024:
+        return JsonResponse({"erreur": "Fichier trop volumineux : 15 Mo maximum pour l'analyse."}, status=400)
+
+    nom_feuille = requete.POST.get("feuille") or None
+    try:
+        entetes, lignes = lire(fichier, nom_feuille)
+    except LectureImpossible as erreur:
+        return JsonResponse({"erreur": str(erreur)}, status=400)
+
+    correspondance = proposer_correspondance(fichier.name, entetes)
+    return JsonResponse({
+        "fichier": {"nom": fichier.name, "format": extension[1:].upper(), "lignes": len(lignes), "colonnes": len(entetes), "feuille": nom_feuille},
+        "feuilles": _feuilles_export(fichier, extension),
+        "apercu": echantillon(lignes, entetes),
+        "correspondance": correspondance,
+        "referentiel": decrire_referentiel(),
+        "persiste": False,
+        "message": "Aucune donnée n'a été importée. Vérifiez ou corrigez le mapping avant la prochaine étape.",
+    })
+
+
+def _feuilles_export(fichier, extension):
+    """Liste les onglets Excel sans empêcher l'analyse de la feuille choisie."""
+    if extension not in {".xlsx", ".xlsm"}:
+        return []
+    # Le contenu a été lu par `lire`; Django's uploaded file can be rembobiné.
+    fichier.seek(0)
+    try:
+        return feuilles_tableur(fichier)
+    except LectureImpossible:
+        return []
+
+
+def prediagnostic_export(table, rapport):
+    """Retourne une lecture honnête d'un export isolé.
+
+    Un seul fichier ne permet ni d'entraîner ni de valider un modèle : il ne
+    porte généralement pas à la fois le contexte T0, les crédits et leur
+    performance future. Ce prédiagnostic évite de transformer un contrôle de
+    colonnes en promesse de scoring.
+    """
+    sources = ("clients", "demandes_credit", "credits", "echeances", "paiements")
+    manquantes = [TABLES[source]["libelle"] for source in sources if source != table]
+    qualite_bloquante = bool(rapport["erreurs"])
+    actions = [
+        f"Analyser les exports manquants : {', '.join(manquantes)}.",
+        "Conserver la période d'observation et la provenance de chaque lot.",
+        "Définir et valider la cible de performance (retard ou défaut) avant tout Model Lab.",
+    ]
+    if qualite_bloquante:
+        actions.insert(0, "Corriger les erreurs bloquantes relevées dans cet export avant l'import du lot.")
+    return {
+        "niveau": "dataset_a_preparer",
+        "libelle": "Dataset à préparer",
+        "pret_pour_modele": False,
+        "constat": (
+            "Cet export isolé a été contrôlé, mais il ne constitue pas un historique complet de scoring. "
+            "Aucun modèle ne peut être déclaré prêt à partir de ce seul fichier."
+        ),
+        "sources_requises": [{"code": source, "libelle": TABLES[source]["libelle"], "recu": source == table}
+                              for source in sources],
+        "actions": actions,
+    }
+
+
+def diagnostic_preparation_lot(tables, rapport):
+    """Diagnostic factuel après lecture du lot, sans score ni modèle implicite."""
+    sources = ("clients", "demandes_credit", "credits", "echeances", "paiements")
+    recues = set(tables)
+    manquantes = [TABLES[source]["libelle"] for source in sources if source not in recues]
+    complet = not manquantes
+    qualite_bloquante = bool(rapport["erreurs"])
+    performance = {"echeances", "paiements"}.issubset(recues)
+    dates = []
+    for table, champ in (("demandes_credit", "date_demande"), ("credits", "date_decaissement"),
+                         ("echeances", "date_exigible"), ("paiements", "date_paiement")):
+        dates.extend(moment for ligne in tables.get(table, []) if (moment := lire_date(ligne.get(champ))))
+    actions = []
+    if manquantes:
+        actions.append(f"Ajouter les exports manquants : {', '.join(manquantes)}.")
+    if qualite_bloquante:
+        actions.append("Corriger les erreurs bloquantes avant de persister le lot.")
+    if not performance:
+        actions.append("Inclure les échéances et paiements pour observer la performance des crédits.")
+    actions.append("Définir, faire valider et versionner la cible de défaut avant tout entraînement.")
+    return {
+        "niveau": "exploration_possible" if complet and not qualite_bloquante else "dataset_a_preparer",
+        "libelle": "Exploration possible" if complet and not qualite_bloquante else "Dataset à préparer",
+        "pret_pour_modele": False,
+        "constat": (
+            "Le lot couvre les objets historiques indispensables à l'exploration. La définition de défaut et les variables T0 restent requises avant un modèle."
+            if complet and not qualite_bloquante else
+            "Le lot n'est pas encore suffisamment complet et cohérent pour soutenir une analyse de scoring."
+        ),
+        "sources": [{"code": source, "libelle": TABLES[source]["libelle"], "recu": source in recues,
+                     "lignes": len(tables.get(source, []))} for source in sources],
+        "periode": {"debut": min(dates).isoformat() if dates else "", "fin": max(dates).isoformat() if dates else ""},
+        "volumes": {table: len(lignes) for table, lignes in tables.items()},
+        "performance_observable": performance,
+        "donnees_t0": "non_verifiees",
+        "cible_defaut": "non_definie",
+        "actions": actions,
+    }
+
+
+def _lire_lot_correspondant(requete):
+    """Relit chaque fichier d'un lot avec un mapping explicitement validé."""
+    try:
+        correspondances = json.loads(requete.POST.get("correspondances", "[]"))
+    except json.JSONDecodeError as erreur:
+        raise ValueError("Les correspondances du lot sont illisibles.") from erreur
+    fichiers = requete.FILES.getlist("fichiers")
+    if not fichiers or not isinstance(correspondances, list) or len(fichiers) != len(correspondances):
+        raise ValueError("Chaque fichier du lot doit avoir une correspondance validée.")
+
+    tables = {}
+    for position, (fichier, correspondance) in enumerate(zip(fichiers, correspondances), start=1):
+        table = correspondance.get("table")
+        if table not in TABLES or table in tables:
+            raise ValueError(f"Fichier {position} : choisissez une table unique du référentiel.")
+        _entetes, lignes = lire(fichier, correspondance.get("feuille") or None)
+        normalisees, _ecartees = appliquer(correspondance, lignes)
+        tables[table] = normalisees
+
+    rapport = evaluer_qualite(tables, {table: champs_obligatoires(table) for table in tables})
+    dependances = (
+        ("activites", "clients"),
+        ("demandes_credit", "clients"),
+        ("credits", "demandes_credit"),
+        ("echeances", "credits"),
+        ("paiements", "credits"),
+    )
+    for enfant, parent in dependances:
+        if enfant in tables and parent not in tables:
+            rapport["erreurs"].append(
+                f"{TABLES[enfant]['libelle']} exige l'export {TABLES[parent]['libelle'].lower()} dans le même lot."
+            )
+    rapport["integrable"] = not rapport["erreurs"]
+    rapport["lignes"] = {table: len(lignes) for table, lignes in tables.items()}
+    return tables, rapport
+
+
+def _entier(valeur):
+    try:
+        return int(float(str(valeur or "0").replace(" ", "").replace(",", ".")))
+    except (ValueError, TypeError):
+        return 0
+
+
+@csrf_exempt
+@require_POST
+def valider_lot_acquisition(requete):
+    """Contrôle un lot multi-fichiers mappé, avant sa persistance."""
+    try:
+        tables, rapport = _lire_lot_correspondant(requete)
+    except (ValueError, LectureImpossible) as erreur:
+        return JsonResponse({"erreur": str(erreur)}, status=400)
+    return JsonResponse({"rapport": rapport, "diagnostic": diagnostic_preparation_lot(tables, rapport), "persiste": False})
+
+
+@csrf_exempt
+@require_POST
+def confirmer_lot_acquisition(requete):
+    """Persiste un lot validé dans l'ordre des relations métier."""
+    try:
+        tables, rapport = _lire_lot_correspondant(requete)
+    except (ValueError, LectureImpossible) as erreur:
+        return JsonResponse({"erreur": str(erreur)}, status=400)
+    if rapport["erreurs"]:
+        return JsonResponse({"erreur": "Le lot contient des erreurs bloquantes.", "rapport": rapport}, status=400)
+    if "clients" not in tables:
+        return JsonResponse({"erreur": "Le lot doit contenir les clients avant de pouvoir être persisté."}, status=400)
+
+    with transaction.atomic():
+        clients = {}
+        ajoutes = 0
+        for ligne in tables["clients"]:
+            identifiant = ligne.get("identifiant_client", "")
+            client, cree = Client.objects.update_or_create(
+                identifiant_source=identifiant,
+                defaults={
+                    "nom_complet": ligne.get("nom_client") or f"Client {identifiant}",
+                    "identifiant_institution_source": ligne.get("identifiant_institution", ""),
+                    "secteur_activite": ligne.get("code_secteur_principal", "Non renseigné"),
+                    "anciennete_activite_mois": _entier(ligne.get("anciennete_activite_mois_a_entree")),
+                },
+            )
+            clients[identifiant] = client
+            ajoutes += int(cree)
+
+        for ligne in tables.get("activites", []):
+            client = clients.get(ligne.get("identifiant_client"))
+            if client:
+                ActiviteImportee.objects.update_or_create(identifiant_source=ligne["identifiant_activite"], defaults={
+                    "client": client, "secteur": ligne.get("code_secteur", ""), "libelle": ligne.get("libelle_activite", ""),
+                    "date_debut": lire_date(ligne.get("date_debut")),
+                })
+        for ligne in tables.get("demandes_credit", []):
+            client = clients.get(ligne.get("identifiant_client"))
+            if client:
+                DemandeImportee.objects.update_or_create(identifiant_source=ligne["identifiant_demande"], defaults={
+                    "client": client, "montant": _entier(ligne.get("montant_demande")), "duree_mois": _entier(ligne.get("duree_demandee_mois")),
+                    "date_demande": lire_date(ligne.get("date_demande")), "objet": ligne.get("objet_credit", ""),
+                })
+        demandes = {ligne["identifiant_demande"]: ligne for ligne in tables.get("demandes_credit", [])}
+        credits = {}
+        for ligne in tables.get("credits", []):
+            demande = demandes.get(ligne.get("identifiant_demande"), {})
+            client = clients.get(ligne.get("identifiant_client")) or clients.get(demande.get("identifiant_client"))
+            if client:
+                credit, _ = CreditImporte.objects.update_or_create(identifiant_source=ligne["identifiant_credit"], defaults={
+                    "client": client, "identifiant_demande_source": ligne.get("identifiant_demande", ""),
+                    "montant_decaisse": _entier(ligne.get("montant_decaisse")), "duree_mois": _entier(ligne.get("duree_mois")),
+                    "date_decaissement": lire_date(ligne.get("date_decaissement")),
+                })
+                credits[ligne["identifiant_credit"]] = credit
+        echeances = {}
+        for ligne in tables.get("echeances", []):
+            credit = credits.get(ligne.get("identifiant_credit"))
+            if credit:
+                echeance, _ = EcheanceImportee.objects.update_or_create(identifiant_source=ligne["identifiant_echeance"], defaults={
+                    "credit": credit, "numero": _entier(ligne.get("numero")), "date_exigible": lire_date(ligne.get("date_exigible")),
+                    "montant_du": _entier(ligne.get("montant_du")),
+                })
+                echeances[ligne["identifiant_echeance"]] = echeance
+        for ligne in tables.get("paiements", []):
+            credit = credits.get(ligne.get("identifiant_credit"))
+            if credit:
+                PaiementImporte.objects.update_or_create(identifiant_source=ligne["identifiant_paiement"], defaults={
+                    "credit": credit, "echeance": echeances.get(ligne.get("identifiant_echeance")),
+                    "date_paiement": lire_date(ligne.get("date_paiement")), "montant_paye": _entier(ligne.get("montant_paye")),
+                    "canal": ligne.get("canal", ""),
+                })
+    return JsonResponse({"message": "Lot importé.", "clients_ajoutes": ajoutes, "rapport": rapport,
+                         "diagnostic": diagnostic_preparation_lot(tables, rapport), "persiste": True})
+
+
+@csrf_exempt
+@require_POST
+def valider_correspondance_acquisition(requete):
+    """Contrôle un mapping choisi par un humain, toujours sans persistance."""
+    fichier = requete.FILES.get("fichier")
+    brut = requete.POST.get("correspondance")
+    if not fichier or not brut:
+        return JsonResponse({"erreur": "Le fichier et la correspondance sont requis."}, status=400)
+    try:
+        correspondance = json.loads(brut)
+    except json.JSONDecodeError:
+        return JsonResponse({"erreur": "La correspondance transmise est illisible."}, status=400)
+
+    table = correspondance.get("table")
+    colonnes = correspondance.get("colonnes", [])
+    if table not in TABLES:
+        return JsonResponse({"erreur": "Choisissez une table cible du référentiel."}, status=400)
+    if not isinstance(colonnes, list):
+        return JsonResponse({"erreur": "Les associations de colonnes sont invalides."}, status=400)
+
+    champs, sources = set(), set()
+    for colonne in colonnes:
+        source, champ = colonne.get("colonne"), colonne.get("champ")
+        if source in sources or (champ and champ in champs):
+            return JsonResponse({"erreur": "Une colonne ou un champ ne peut être associé qu'une seule fois."}, status=400)
+        if champ and champ not in TABLES[table]["champs"]:
+            return JsonResponse({"erreur": f"Le champ « {champ} » n'appartient pas à la table choisie."}, status=400)
+        sources.add(source)
+        if champ:
+            champs.add(champ)
+
+    try:
+        _entetes, lignes = lire(fichier, requete.POST.get("feuille") or None)
+    except LectureImpossible as erreur:
+        return JsonResponse({"erreur": str(erreur)}, status=400)
+    normalisees, ecartees = appliquer(correspondance, lignes)
+    rapport = evaluer_qualite({table: normalisees}, {table: champs_obligatoires(table)})
+    rapport["lignes"] = {table: len(normalisees)}
+    return JsonResponse({
+        "table": table,
+        "libelle_table": TABLES[table]["libelle"],
+        "rapport": rapport,
+        "apercu_normalise": echantillon(normalisees, sorted(champs)),
+        "colonnes_ecartees": [colonne for colonne in ecartees[0].keys()] if ecartees else [],
+        "prediagnostic": prediagnostic_export(table, rapport),
+        "persiste": False,
+        "message": "Contrôle terminé : aucune donnée n'a été ajoutée à la base. L'import persistant viendra après la validation du lot complet.",
+    })
 
 
 @require_GET

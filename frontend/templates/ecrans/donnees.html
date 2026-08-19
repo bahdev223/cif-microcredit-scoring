@@ -1,4 +1,23 @@
 <section id="importer" class="vue vue-masque">
+  <div class="section" id="analyse-export">
+    <header>
+      <div><h2>Analyser un export institutionnel</h2><p class="sous-titre">Excel ou CSV. La plateforme propose les correspondances ; vous gardez la décision.</p></div>
+      <span class="badge">Aucune donnée ajoutée</span>
+    </header>
+    <label id="zone-analyse-export" class="zone-import" for="fichier-analyse-export">
+      <span class="icone">↑</span>
+      <strong>Déposez un fichier Excel ou CSV</strong>
+      <span>La lecture, l'aperçu et le contrôle se font avant tout import.</span>
+      <input id="fichier-analyse-export" type="file" accept=".csv,.xlsx,.xlsm,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+    </label>
+    <p id="etat-analyse-export" class="message" style="margin-top:12px">Choisissez un export pour commencer l'analyse.</p>
+    <div id="choix-feuille-export" class="masque" style="margin-top:16px"></div>
+    <div id="resultat-analyse-export" class="masque" style="margin-top:18px"></div>
+    <div id="lot-acquisition" class="masque" style="margin-top:18px"></div>
+  </div>
+
+  <div class="section">
+    <header><div><h2>Import du lot de référence</h2><p class="sous-titre">Parcours de démonstration avec les six CSV normalisés de l'institution.</p></div><span class="badge">Lot complet</span></header>
   <ol class="etapes" id="etapes-import">
     <li data-etape-import="1"><span class="puce">1</span>Déposer</li>
     <li data-etape-import="2"><span class="puce">2</span>Contrôler</li>
@@ -7,10 +26,10 @@
   </ol>
 
   <div id="import-etape-1" class="etape-contenu">
-    <div class="section">
+    <div>
       <header>
-        <h2>Déposer les fichiers</h2>
-        <span class="badge">CSV uniquement</span>
+        <h3>Déposer les fichiers</h3>
+        <span class="badge">CSV normalisés</span>
       </header>
       <div class="grille-2" style="margin-bottom:18px">
         <label>Lot de référence disponible<select id="lot-reference"></select></label>
@@ -61,6 +80,7 @@
       <button id="import-suivant" class="bouton-principal masque" type="button">Suivant</button>
       <button id="confirmer-import" class="bouton-principal masque" type="button">Confirmer l'import</button>
     </span>
+  </div>
   </div>
 </section>
 

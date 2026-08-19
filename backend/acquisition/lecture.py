@@ -22,7 +22,7 @@ class LectureImpossible(ValueError):
     """Le fichier n'a pas pu être lu, ou ne contient pas de tableau."""
 
 
-def lire(fichier):
+def lire(fichier, feuille=None):
     """Retourne (en-têtes, lignes) pour un fichier CSV ou Excel.
 
     Les lignes sont des dictionnaires en-tête → valeur texte. La conversion des
@@ -34,7 +34,7 @@ def lire(fichier):
     if isinstance(contenu, str):
         contenu = contenu.encode("utf-8")
     if nom.endswith(EXTENSIONS_TABLEUR):
-        return _lire_tableur(contenu, nom)
+        return _lire_tableur(contenu, nom, feuille)
     return _lire_csv(contenu, nom)
 
 
@@ -66,16 +66,46 @@ def _lire_csv(contenu, nom):
     return _structurer(tableau, nom)
 
 
-def _lire_tableur(contenu, nom):
+def feuilles_tableur(fichier):
+    """Retourne les feuilles non vides d'un fichier Excel, sans lire son tableau.
+
+    L'agent peut ainsi choisir explicitement la feuille à analyser. Le premier
+    onglet n'est jamais supposé être le bon : il peut être une page de garde.
+    """
+    nom = (getattr(fichier, "name", "") or "").lower()
+    contenu = fichier.read()
+    if not nom.endswith(EXTENSIONS_TABLEUR):
+        return []
+    try:
+        from openpyxl import load_workbook
+        classeur = load_workbook(BytesIO(contenu), read_only=True, data_only=True)
+    except Exception as erreur:
+        raise LectureImpossible(f"{nom} : fichier Excel illisible.") from erreur
+    try:
+        return [nom_feuille for nom_feuille in classeur.sheetnames
+                if any(any(cellule is not None and str(cellule).strip() for cellule in ligne)
+                       for ligne in classeur[nom_feuille].iter_rows(values_only=True))]
+    finally:
+        classeur.close()
+
+
+def _lire_tableur(contenu, nom, feuille=None):
     try:
         from openpyxl import load_workbook
     except ImportError as erreur:  # pragma: no cover - dépendance déclarée
         raise LectureImpossible("La lecture des fichiers Excel nécessite openpyxl.") from erreur
 
-    classeur = load_workbook(BytesIO(contenu), read_only=True, data_only=True)
-    feuille = classeur[classeur.sheetnames[0]]
+    try:
+        classeur = load_workbook(BytesIO(contenu), read_only=True, data_only=True)
+    except Exception as erreur:
+        raise LectureImpossible(f"{nom} : fichier Excel illisible.") from erreur
+    nom_feuille = feuille or classeur.sheetnames[0]
+    if nom_feuille not in classeur.sheetnames:
+        classeur.close()
+        raise LectureImpossible(f"La feuille « {nom_feuille} » est introuvable dans {nom}.")
+    feuille_excel = classeur[nom_feuille]
     tableau = []
-    for ligne in feuille.iter_rows(values_only=True):
+    for ligne in feuille_excel.iter_rows(values_only=True):
         cellules = ["" if cellule is None else str(cellule).strip() for cellule in ligne]
         if any(cellules):
             tableau.append(cellules)

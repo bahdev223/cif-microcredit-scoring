@@ -9,7 +9,7 @@ Ce guide explique comment installer, exécuter et maintenir le prototype CIF. Il
 - Git pour cloner et publier le dépôt ;
 - Docker Desktop est facultatif, uniquement pour l'exécution conteneurisée.
 
-Les dépendances Python sont centralisées dans `requirements.txt` : Django pour le produit, PyYAML pour les configurations, pandas et scikit-learn pour les travaux data, Jupyter pour les laboratoires.
+Les dépendances Python sont centralisées dans `requirements.txt` : Django pour le produit, `openpyxl` pour la lecture des exports Excel, PyYAML pour les configurations, pandas et scikit-learn pour les travaux data, Jupyter pour les laboratoires.
 
 ## 2. Installation locale
 
@@ -42,14 +42,16 @@ Le premier lancement crée la base SQLite locale et applique les migrations. L'a
 | `http://127.0.0.1:8000/api/etat/` | diagnostic rapide du service |
 | `http://127.0.0.1:8000/admin/` | administration Django |
 | `http://127.0.0.1:8000/api/demandes-credit/analyser/` | API `POST` d'analyse |
+| `http://127.0.0.1:8000/api/acquisition/analyser-fichier/` | API `POST` de lecture CSV/XLSX/XLSM sans persistance |
+| `http://127.0.0.1:8000/api/acquisition/valider-correspondance/` | API `POST` de contrôle d'un mapping humain |
 
 Pour arrêter le serveur, utiliser `Ctrl+C` dans son terminal. En cas de réponse HTML à la place du JSON, vérifier le serveur, les migrations et l'URL de la route API.
 
-## 4. Tester l'interface
+## 4. Tester l'interface et un export Excel
 
-L'écran d'accueil charge Fatou Traoré, un cas pédagogique. Il contient : identité et demande, activité économique, ménage et engagements, historique, puis un résultat explicable avec score, indicateurs et règles déclenchées.
+L'application donne accès au portefeuille, aux clients, aux demandes, aux produits, au paramétrage, à l'audit et à l'import de données. Le cas Fatou Traoré reste une donnée fictive de démonstration ; aucune décision réelle ne doit être prise à partir de l'interface.
 
-Un fichier JSON unique peut être importé depuis `donnees/echantillons/`. Respecter le schéma `schema_dossier_saisie.json`. Les CSV synthétiques ne sont pas des dossiers individuels importables directement dans ce formulaire.
+Pour préparer un export institutionnel, ouvrir **Données → Importer des données**, déposer un CSV ou un fichier Excel, choisir la feuille si nécessaire, vérifier la table détectée et les associations proposées, puis cliquer sur **Contrôler cette correspondance**. Cette action ne persiste aucune donnée : elle produit un aperçu et un rapport de qualité. Ajouter ensuite chaque export contrôlé au **lot de préparation**, contrôler les relations du lot complet, puis seulement confirmer l'import. L'application redirige alors vers les clients importés et leurs dossiers.
 
 ## 5. Architecture du dépôt
 
@@ -132,6 +134,7 @@ La base SQLite et les fichiers du dépôt sont montés dans le conteneur. Ne pas
 
 ```powershell
 python backend/manage.py check
+python backend/manage.py test api
 python tests/verifier_monde.py
 git status
 ```
@@ -147,4 +150,6 @@ Si des données synthétiques ont été régénérées, vérifier les contrôles
 | erreur de table SQLite | exécuter `python backend/manage.py migrate` |
 | l'analyse renvoie une page HTML | vérifier l'URL API, le serveur et les migrations |
 | fichier JSON refusé | importer un dossier unique conforme au schéma, pas un CSV |
+| export Excel refusé | vérifier l'extension `.xlsx` ou `.xlsm`, la feuille choisie et la taille (15 Mo maximum pour l'analyse) |
+| colonne mal associée | corriger le menu de correspondance avant de lancer le contrôle ; aucune donnée n'est écrite à cette étape |
 | contrôle du monde en échec | ne pas publier les données ; examiner le premier contrôle en erreur |

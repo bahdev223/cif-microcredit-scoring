@@ -1,6 +1,10 @@
 from django.urls import path
 from .views import (
     analyser_demande_credit,
+    analyser_fichier_acquisition,
+    valider_correspondance_acquisition,
+    valider_lot_acquisition,
+    confirmer_lot_acquisition,
     appliquer_simulation,
     creer_client,
     detail_client,
@@ -30,6 +34,10 @@ from .views import (
 )
 
 urlpatterns = [
+    path("acquisition/analyser-fichier/", analyser_fichier_acquisition, name="analyser-fichier-acquisition"),
+    path("acquisition/valider-correspondance/", valider_correspondance_acquisition, name="valider-correspondance-acquisition"),
+    path("acquisition/valider-lot/", valider_lot_acquisition, name="valider-lot-acquisition"),
+    path("acquisition/confirmer-lot/", confirmer_lot_acquisition, name="confirmer-lot-acquisition"),
     path("etat/", etat_service, name="etat-service"),
     path("tableau-bord/", tableau_bord, name="tableau-bord"),
     path("institution/", lire_institution, name="lire-institution"),

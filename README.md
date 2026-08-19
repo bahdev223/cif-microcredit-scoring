@@ -1,6 +1,6 @@
 # CIF — Évaluation du risque de microcrédit
 
-Prototype Django d'aide à la décision pour les agents de microfinance. Il permet de saisir ou charger un dossier fictif, d'estimer un risque avec des règles transparentes et d'expliquer le résultat. La décision d'octroi reste humaine.
+Prototype Django d'aide à la décision pour les agents de microfinance. Il permet de suivre des dossiers fictifs, de préparer des exports institutionnels CSV/Excel, d'estimer un risque avec des règles transparentes et d'expliquer le résultat. La décision d'octroi reste humaine.
 
 > Les données et résultats sont pédagogiques et fictifs. Ne pas utiliser ce prototype pour accorder ou refuser un crédit réel.
 
@@ -33,7 +33,7 @@ python backend/manage.py migrate
 python backend/manage.py runserver
 ```
 
-Ouvrir [http://127.0.0.1:8000/](http://127.0.0.1:8000/). L'écran charge Fatou au démarrage ; le dossier peut être modifié ou remplacé par un JSON de `donnees/echantillons/`.
+Ouvrir [http://127.0.0.1:8000/](http://127.0.0.1:8000/). Pour analyser un export Excel, aller dans **Données → Importer des données** : la plateforme propose les correspondances, mais l'utilisateur les valide avant tout contrôle et aucune donnée n'est écrite pendant cette étape.
 
 ## Parcours disponibles
 

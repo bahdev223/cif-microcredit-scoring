@@ -49,4 +49,8 @@ Data Mart puis exploration, ou pilote de collecte
 
 ## Statut
 
-Cet écran est une priorité fonctionnelle future. Le prototype actuel contrôle un lot CSV structuré, mais ne calcule pas encore ce diagnostic complet ni l'import Excel/mapping interactif.
+Le premier étage du parcours est disponible : un export CSV/XLSX/XLSM peut être lu sans persistance, sa feuille peut être sélectionnée, ses colonnes peuvent être associées au référentiel canonique puis contrôlées. Le rapport affiche les six dimensions de qualité et les anomalies ligne par ligne. À l'issue de ce contrôle, l'écran affiche un **pré-diagnostic** : il rappelle les sources encore nécessaires et refuse honnêtement de déclarer un modèle prêt depuis un export isolé.
+
+Lorsqu'un lot complet est préparé, le diagnostic agrège les objets reçus et leurs volumes, indique la période lue lorsqu'elle est disponible, les sources manquantes et si la performance est observable grâce aux échéances et paiements. Les données T0 et la cible de défaut restent explicitement **non vérifiées / non définies**. Il peut seulement conclure **Dataset à préparer** ou **Exploration possible** ; il ne rend jamais un modèle « prêt ».
+
+Le diagnostic institutionnel complet reste à approfondir : mesure de période réellement couverte, couverture détaillée des variables T0, provenance persistée ligne par ligne et définition versionnée de la cible avant d'autoriser l'entrée au Model Lab.

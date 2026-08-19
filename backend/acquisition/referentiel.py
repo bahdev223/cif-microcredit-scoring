@@ -22,6 +22,7 @@ TABLES = {
             "identifiant_client": {
                 "libelle": "Identifiant du client", "type": "TEXTE", "obligatoire": True,
                 "synonymes": ("client", "client_id", "id_client", "code_client", "numero_client",
+                              "num_client", "num_soc", "num_societaire", "customer_number",
                               "matricule", "matricule_client", "reference_client", "cle_client"),
             },
             "nom_client": {
@@ -87,7 +88,7 @@ TABLES = {
             },
             "identifiant_client": {
                 "libelle": "Identifiant du client", "type": "TEXTE", "obligatoire": True,
-                "synonymes": ("client", "client_id", "id_client", "code_client", "matricule"),
+                "synonymes": ("client", "client_id", "id_client", "code_client", "num_client", "num_soc", "num_societaire", "matricule"),
             },
             "montant_demande": {
                 "libelle": "Montant demandé", "type": "MONTANT", "obligatoire": True,
@@ -119,16 +120,16 @@ TABLES = {
             },
             "identifiant_demande": {
                 "libelle": "Identifiant de la demande", "type": "TEXTE", "obligatoire": True,
-                "synonymes": ("demande", "demande_id", "id_demande", "dossier", "numero_dossier"),
+                "synonymes": ("demande", "demande_id", "id_demande", "num_demande", "dossier", "numero_dossier"),
             },
             "identifiant_client": {
                 "libelle": "Identifiant du client", "type": "TEXTE", "obligatoire": False,
-                "synonymes": ("client", "client_id", "id_client", "code_client", "matricule"),
+                "synonymes": ("client", "client_id", "id_client", "code_client", "num_client", "num_soc", "num_societaire", "matricule"),
             },
             "montant_decaisse": {
                 "libelle": "Montant décaissé", "type": "MONTANT", "obligatoire": False,
                 "synonymes": ("montant", "montant_octroye", "montant_accorde", "capital", "principal",
-                              "mt_credit", "montant_credit", "montant_debloque"),
+                              "mt_credit", "mt_pret", "montant_pret", "montant_credit", "montant_debloque"),
             },
             "duree_mois": {
                 "libelle": "Durée (mois)", "type": "NOMBRE", "obligatoire": False,
@@ -137,7 +138,7 @@ TABLES = {
             "date_decaissement": {
                 "libelle": "Date de décaissement", "type": "DATE", "obligatoire": False,
                 "synonymes": ("date", "date_octroi", "date_deblocage", "date_mise_en_place",
-                              "dt_decaissement", "date_credit"),
+                              "dt_decaissement", "dt_decais", "date_credit"),
             },
         },
     },

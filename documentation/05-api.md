@@ -73,6 +73,17 @@ Les routes d'import reçoivent un lot CSV, vérifient sa structure puis persiste
 
 Ces routes n'encaisseront jamais un paiement et ne décaissent jamais un crédit. Elles servent à acquérir et observer l'historique fourni par le système existant.
 
+## Acquisition Excel/CSV avec mapping humain
+
+Le parcours d'acquisition assisté est celui utilisé par l'écran **Données → Importer des données**. Il ne remplace pas les routes de lot CSV normalisé : il prépare un export institutionnel dont les noms de colonnes sont différents de ceux de CIF.
+
+- `POST /api/acquisition/analyser-fichier/` : reçoit `fichier` et, pour Excel, `feuille` facultative ; retourne les feuilles, l'aperçu, les propositions de table et de correspondance ; aucune écriture.
+- `POST /api/acquisition/valider-correspondance/` : reçoit `fichier`, `feuille` facultative et `correspondance` JSON ; retourne le tableau normalisé, les anomalies et les six dimensions de qualité ; aucune écriture.
+- `POST /api/acquisition/valider-lot/` : reçoit plusieurs champs `fichiers` et un tableau JSON `correspondances` dans le même ordre ; contrôle les relations inter-tables et retourne un diagnostic de préparation au scoring ; aucune écriture.
+- `POST /api/acquisition/confirmer-lot/` : même contrat que la validation ; persiste uniquement le lot sans erreur bloquante, puis les clients et leur historique deviennent visibles dans le dossier client.
+
+Un fichier correspond à une table canonique : `clients`, `activites`, `demandes_credit`, `credits`, `echeances` ou `paiements`. Le mapping est toujours choisi ou confirmé par un humain. Le diagnostic peut signaler **Dataset à préparer** ou **Exploration possible**, mais ne dit jamais qu'un modèle est prêt : il manque encore la cible de défaut validée et les variables T0.
+
 ## API d'ingestion cible — non livrée
 
 La future API d'intégration pourra exposer un lot canonique, par exemple `POST /api/v1/ingestion/lots/`, ou des ressources telles que `clients`, `activites`, `demandes`, `credits`, `echeances` et `paiements`.

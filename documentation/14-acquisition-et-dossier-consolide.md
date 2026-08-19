@@ -24,7 +24,7 @@ Historique importé ──────┘
 
 Les sources restent identifiables. Une valeur importée ne doit pas écraser une valeur collectée, et les données postérieures à une décision ne doivent jamais devenir des variables utilisées pour cette décision.
 
-## Pipeline d'acquisition à construire
+## Pipeline d'acquisition
 
 1. dépôt CSV et Excel ;
 2. détection des feuilles, colonnes et types ;
@@ -73,9 +73,13 @@ Le rapport de qualité ne doit pas se limiter à un pourcentage global opaque. I
 
 Un rapport distingue les erreurs bloquantes, les avertissements et ce qui ne peut pas être vérifié automatiquement.
 
-## État actuel
+## État actuel du prototype
 
-Le prototype accepte aujourd'hui un lot CSV structuré et persiste l'historique analytique. La détection automatique de colonnes, le mapping interactif, l'import Excel et le rapprochement avancé restent les prochaines priorités ; ils ne doivent pas être présentés comme déjà livrés.
+L'écran **Importer des données** accepte maintenant un export CSV, XLSX ou XLSM pour une analyse préparatoire. Il lit la feuille choisie, expose un aperçu, propose une table canonique et des associations de colonnes, puis contrôle le mapping corrigé par l'utilisateur selon les six dimensions de qualité.
+
+Cette étape n'écrit volontairement rien dans la base : `Analyser` et `Contrôler cette correspondance` servent à comprendre l'export et à préparer un connecteur versionné. Lorsque plusieurs exports mappés sont ajoutés au **lot de préparation**, le système contrôle leurs relations (client → demande → crédit → échéance/paiement), produit un diagnostic de couverture puis autorise l'import. Une fois importés, les clients et leurs historiques sont accessibles dans le parcours **Clients → Dossier client**.
+
+Le rapprochement avancé entre sources hétérogènes et la provenance ligne par ligne restent à livrer. Le parcours CSV normalisé de démonstration reste disponible séparément.
 
 ## Entrée universelle et provenance
 

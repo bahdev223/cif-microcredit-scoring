@@ -12,7 +12,7 @@ const TITRES = {
   clients: ["Clients", "Personnes suivies par l'institution."],
   "fiche-client": ["Dossier client", "Situation, activité et parcours."],
   retards: ["Retards", "Échéances impayées et recouvrement."],
-  importer: ["Importer des données", "Chargement et contrôle d'un lot CSV."],
+  importer: ["Importer des données", "Analyse d'exports Excel/CSV et contrôle d'un lot."],
   qualite: ["Qualité des données", "Anomalies du dernier lot contrôlé."],
   produits: ["Produits de crédit", "Produits proposés par l'institution."],
   institution: ["Institution", "Informations de votre organisation."],
