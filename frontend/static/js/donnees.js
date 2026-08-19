@@ -258,7 +258,7 @@ function afficherControle(rapport) {
           <td class="montant">${nombre(lignesParFichier[nom])}</td></tr>`).join("")}
         </tbody>
       </table>
-    </div>` : '<div class="encart danger">Aucun fichier exploitable n'a été lu.</div>';
+    </div>` : "<div class=\"encart danger\">Aucun fichier exploitable n'a été lu.</div>";
 
   $("#import-synthese").innerHTML = gabaritDimensions(rapport);
 }

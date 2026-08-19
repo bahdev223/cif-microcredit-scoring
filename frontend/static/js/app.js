@@ -7,7 +7,7 @@ import { brancherClients, ouvrirFicheClient } from "./clients.js";
 import { brancherCredit, demarrerDemande, chargerDemandes } from "./credit.js";
 import { brancherInstruction, ouvrirInstruction } from "./instruction.js";
 import { brancherExploitation } from "./exploitation.js";
-import { brancherDonnees } from "./donnees.js";
+import { brancherDonnees } from "./donnees.js?v=20260819-2";
 import { brancherParametrage, chargerInstitution } from "./parametrage.js";
 
 async function rafraichir() {
